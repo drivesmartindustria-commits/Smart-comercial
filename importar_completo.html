@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"/>
+<title>Importar Dados Completos — Smart Indústria</title>
+<style>
+body{font-family:sans-serif;max-width:750px;margin:40px auto;padding:20px;background:#f5f5f5}
+.card{background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.1);margin-bottom:16px}
+h1{color:#1a1714;margin-bottom:8px;font-size:20px}
+p{color:#666;margin-bottom:20px;font-size:14px}
+button{background:#15803D;color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:15px;cursor:pointer;width:100%}
+button:disabled{background:#999;cursor:not-allowed}
+#log{margin-top:20px;background:#f8f8f8;border:1px solid #ddd;border-radius:8px;padding:16px;max-height:450px;overflow-y:auto;font-size:12px;font-family:monospace;line-height:1.6}
+.ok{color:#15803D}.err{color:#B91C1C}.info{color:#2563EB}.warn{color:#B45309}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>📥 Importar Dados Completos para o Supabase</h1>
+  <p>Vai importar: <strong>4 pedidos</strong>, <strong>6 clientes</strong>, <strong>38 produtos</strong>, <strong>2 agenda</strong>, <strong>4 notas</strong></p>
+  <button onclick="importar()" id="btn">▶ Iniciar Importação</button>
+  <div id="log"></div>
+</div>
+<script>
+const SUPA_URL='https://whrxyznycfpfnvhsgtfhj.supabase.co';
+const SUPA_KEY='sb_publishable_0C91QEkdbDap-D1gs4YMew_QBmz5B2r';
+const DADOS={"pedidos": [{"tipo": "Locação", "tri": "1º TRI-26", "cliente": "GMHUB", "evento": "Casa Giardini", "uf": "SP", "produto": "Pratic-2.1", "descricao": "Praticável 2x1", "qtde": 9.0, "unitario": 25.0, "total": 225.0, "data_pedido": "2026-03-11", "montagem": "2026-03-11", "prazo_pgto": "", "data_pgto": null, "status_pgto": "PENDENTE", "obs": "Alessandra", "resp": "Alessandra", "das": 4, "icms": 0, "iss": 0}, {"tipo": "Locação", "tri": "1º TRI-26", "cliente": "GMHUB", "evento": "Casa Giardini", "uf": "SP", "produto": "PR - 1X1", "descricao": "Praticável 1X1", "qtde": 1.0, "unitario": 25.0, "total": 25.0, "data_pedido": "2026-03-11", "montagem": "2026-03-11", "prazo_pgto": "", "data_pgto": null, "status_pgto": "PENDENTE", "obs": "Alessandra", "resp": "Alessandra", "das": 4, "icms": 0, "iss": 0}, {"tipo": "Locação", "tri": "1º TRI-26", "cliente": "Fábrica Ceno", "evento": "Espaço Unimed", "uf": "SP", "produto": "Pratic-2.1", "descricao": "Praticável 2x1", "qtde": 48.0, "unitario": 25.0, "total": 1200.0, "data_pedido": "2026-03-10", "montagem": "2026-03-10", "prazo_pgto": "", "data_pgto": null, "status_pgto": "PENDENTE", "obs": "Alessandra", "resp": "Alessandra", "das": 4, "icms": 0, "iss": 0}, {"tipo": "Locação", "tri": "1º TRI-26", "cliente": "Fábio", "evento": "Acham", "uf": "SP", "produto": "Pratic-2.1", "descricao": "Praticável 2x1", "qtde": 12.0, "unitario": 81.25, "total": 975.0, "data_pedido": "2026-03-16", "montagem": "2026-03-16", "prazo_pgto": "", "data_pgto": null, "status_pgto": "PENDENTE", "obs": "Alessandra", "resp": "Alessandra", "das": 4, "icms": 0, "iss": 0}], "clientes": [{"nome": "PROMOSOM EVENTOS", "cnpj": "06.019.783/0001-31", "tel": "11947773068.0", "email": "MARCELO@PROMOSOM.COM.BR", "end": "", "cidade": "SANTO ANDRE", "uf": "SP", "obs": ""}, {"nome": "SMART ESTRUTURAS", "cnpj": "18.256.257/0001-74", "tel": "1194748-0711", "email": "ATENDIMENTO@SMARTESTRUTURAS.COM.BR", "end": "AV DOS ESTADOS, 2092", "cidade": "SANTO ANDRÉ", "uf": "SP", "obs": "CONTATO: ALESSANDRA GUILLES"}, {"nome": "PRISMA EVENTOS", "cnpj": "", "tel": "", "email": "", "end": "", "cidade": "", "uf": "SP", "obs": "CONTATO: EDUARDO/TATIANA"}, {"nome": "EVEREST EVENTOS", "cnpj": "", "tel": "", "email": "", "end": "", "cidade": "", "uf": "SP", "obs": "CONTATO: LUZIA/RAPHAEL"}, {"nome": "EXPANSOM", "cnpj": "", "tel": "", "email": "", "end": "", "cidade": "", "uf": "SP", "obs": "CONTATO: BRUNO"}, {"nome": "FIRMA PRODUÇÕES", "cnpj": "", "tel": "", "email": "", "end": "", "cidade": "FORTALEZA", "uf": "Outro", "obs": ""}], "produtos": [{"cod": "Q 15", "tipo": "Venda", "descricao": "1 metro", "preco": 1000.0, "unid": "un", "obs": ""}, {"cod": "TR-P30-0300", "tipo": "Venda", "descricao": "Torre P.30 de 0,300", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-P30-0400", "tipo": "Venda", "descricao": "Torre P.30 de 0,400", "preco": 0, "unid": "un", "obs": ""}, {"cod": "CB-Q15-000", "tipo": "Venda", "descricao": "Cubo Q.15", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-P30-0500", "tipo": "Venda", "descricao": "Torre P.30 de 0,500", "preco": 0, "unid": "un", "obs": ""}, {"cod": "CB-Q15-010", "tipo": "Venda", "descricao": "Cubo Q.15 de 10°", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-P30-0600", "tipo": "Venda", "descricao": "Torre P.30 de 0,600", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-P30-0700", "tipo": "Venda", "descricao": "Torre P.30 de 0,700", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-Q15-0200", "tipo": "Venda", "descricao": "Torre Q.15 de 0,200", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-P30-0800", "tipo": "Venda", "descricao": "Torre P.30 de 0,800", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-P30-0900", "tipo": "Venda", "descricao": "Torre P.30 de 0,900", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-P30-1000", "tipo": "Venda", "descricao": "Torre P.30 de 1,000", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-P30-1500", "tipo": "Venda", "descricao": "Torre P.30 de 1,500", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-Q15-0300", "tipo": "Venda", "descricao": "Torre Q.15 de 0,300", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-Q15-0400", "tipo": "Venda", "descricao": "Torre Q.15 de 0,400", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-Q15-0500", "tipo": "Venda", "descricao": "Torre Q.15 de 0,500", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-Q15-0600", "tipo": "Venda", "descricao": "Torre Q.15 de 0,600", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-Q15-0700", "tipo": "Venda", "descricao": "Torre Q.15 de 0,700", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-Q15-1000", "tipo": "Venda", "descricao": "Torre Q.15 de 1,000", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-Q15-1500", "tipo": "Venda", "descricao": "Torre Q.15 de 1,500", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-Q15-2000", "tipo": "Venda", "descricao": "Torre Q.15 de 2,000", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-Q15-3000", "tipo": "Venda", "descricao": "Torre Q.15 de 3,000", "preco": 0, "unid": "un", "obs": ""}, {"cod": "BS-Q15-P", "tipo": "Venda", "descricao": "Base Q.15 P", "preco": 0, "unid": "un", "obs": ""}, {"cod": "BS-Q15-G", "tipo": "Venda", "descricao": "Base Q.15 G", "preco": 0, "unid": "un", "obs": ""}, {"cod": "AC-Q15-001", "tipo": "Venda", "descricao": "Grepo Q.15", "preco": 0, "unid": "un", "obs": ""}, {"cod": "CB-P30-000", "tipo": "Venda", "descricao": "Cubo P.30", "preco": 0, "unid": "un", "obs": ""}, {"cod": "CB-P30-010", "tipo": "Venda", "descricao": "Cubo P.30 de 10°", "preco": 0, "unid": "un", "obs": ""}, {"cod": "DB-P30-0200", "tipo": "Venda", "descricao": "Dobradiça 0,200", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-P30-0200", "tipo": "Venda", "descricao": "Torre P.30 de 0,200", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-P30-2000", "tipo": "Venda", "descricao": "Torre P.30 de 2,000", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-P30-2500", "tipo": "Venda", "descricao": "Torre P.30 de 2,500", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-P30-3000", "tipo": "Venda", "descricao": "Torre P.30 de 3,000", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-P30-4000", "tipo": "Venda", "descricao": "Torre P.30 de 4,000", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-P30-5000", "tipo": "Venda", "descricao": "Torre P.30 de 5,000", "preco": 0, "unid": "un", "obs": ""}, {"cod": "TR-P30-6000", "tipo": "Venda", "descricao": "Torre P.30 de 6,000", "preco": 0, "unid": "un", "obs": ""}, {"cod": "AC-P30-001", "tipo": "Venda", "descricao": "Grepo P30", "preco": 0, "unid": "un", "obs": ""}, {"cod": "PR-2X1", "tipo": "Locação", "descricao": "Praticável 2x1", "preco": 25.0, "unid": "un", "obs": ""}, {"cod": "PR - 1X1", "tipo": "Locação", "descricao": "Praticável 1X1", "preco": 25.0, "unid": "un", "obs": ""}], "agenda": [{"titulo": "Reunião para testar o novo sistema para área comercial.", "data": "2026-04-13", "hora": "14:00", "descricao": "Reunião será com Robson e Alessandra", "tipo": "Reunião", "resp": "Robson"}, {"titulo": "REUNIÃO COM FORNECEDOR", "data": "2026-04-10", "hora": "20:00", "descricao": "", "tipo": "Reunião", "resp": "Robson"}], "notas": [{"texto": "Na próxima semana sem falta planejar a compra do material para fazer Q15 e igualar o estoque da Alessandra.", "resp": "Marcelo", "data": "2026-04-10"}, {"texto": "Continuar fazendo testes no sistema até ter a certeza que não teremos problemas.\n\ntestar todo dia", "resp": "Robson", "data": "2026-04-10"}, {"texto": "Alessandra, vc tem algum orçamento de locação de praticáveis que poderia lançar?", "resp": "Robson", "data": "2026-04-10"}, {"texto": "Para soldar uma peça de 1 metro são necessárias 18 varetas.", "resp": "Alessandra", "data": "2026-04-11"}]};
+
+function log(msg,tipo='info'){const el=document.getElementById('log');el.innerHTML+=`<div class="${tipo}">${msg}</div>`;el.scrollTop=el.scrollHeight;}
+
+async function inserir(tabela, itens, nomeCampo){
+  log(`\n📋 Importando ${itens.length} ${tabela}...`, 'info');
+  let ok=0,err=0;
+  for(const item of itens){
+    try{
+      const r=await fetch(SUPA_URL+'/rest/v1/'+tabela,{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(item)});
+      if(r.ok){ok++;log('✓ '+item[nomeCampo],'ok');}
+      else{const t=await r.text();err++;log('✗ '+item[nomeCampo]+': '+t,'err');}
+    }catch(e){err++;log('✗ '+item[nomeCampo]+': '+e.message,'err');}
+    await new Promise(r=>setTimeout(r,80));
+  }
+  log(`→ ${tabela}: ${ok} ok, ${err} erros`,'warn');
+  return ok;
+}
+
+async function importar(){
+  const btn=document.getElementById('btn');
+  btn.disabled=true;btn.textContent='Importando...';
+  log('🚀 Iniciando importação completa...','info');
+  
+  await inserir('pedidos', DADOS.pedidos, 'cliente');
+  await inserir('clientes', DADOS.clientes, 'nome');
+  await inserir('produtos', DADOS.produtos, 'cod');
+  await inserir('agenda', DADOS.agenda, 'titulo');
+  await inserir('notas', DADOS.notas, 'texto');
+  
+  log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━','info');
+  log('✅ Importação concluída! Acesse o sistema para verificar.','ok');
+  btn.textContent='✅ Concluído!';
+}
+</script>
+</body>
+</html>
