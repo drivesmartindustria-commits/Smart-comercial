@@ -265,7 +265,10 @@ tbody tr:hover td{background:var(--surface2)}
 <div id="pane-pedidos" class="pane">
   <div class="topbar">
     <div><div class="page-title">Locações e Vendas</div><div class="page-sub">Todos os pedidos registrados</div></div>
-    <div class="topbar-right"><button class="btn" onclick="openForm('pedido')">+ Novo Pedido</button></div>
+    <div class="topbar-right">
+      <button class="btn-outline" onclick="exportarBackup()" title="Exportar todos os dados para Excel">💾 Backup Excel</button>
+      <button class="btn" onclick="openForm('pedido')">+ Novo Pedido</button>
+    </div>
   </div>
   <div class="card">
     <div class="tab-row">
@@ -1940,6 +1943,53 @@ async function submitAgenda(){
 function openEditAgenda(id){const a=AGENDA.find(x=>x.id===id);if(!a)return;editAgendaId=id;document.getElementById('form-agenda-title').textContent='Editar Compromisso';document.getElementById('fa-titulo').value=a.titulo||'';document.getElementById('fa-data').value=a.data||'';document.getElementById('fa-hora').value=a.hora||'';document.getElementById('fa-desc').value=a.desc||'';document.getElementById('fa-tipo').value=a.tipo||'Reunião';document.getElementById('fa-resp').value=a.resp||'';document.getElementById('form-agenda-msg').className='form-msg';document.getElementById('form-agenda').classList.add('open');}
 async function deleteAgenda(id){if(!confirm('Excluir?'))return;await sbDelete('agenda',id);AGENDA=AGENDA.filter(a=>a.id!==id);renderAgenda();renderCalendar();}
 async function rewriteAgenda(){/* não usado com Supabase */}
+
+// BACKUP EXCEL
+async function exportarBackup(){
+  try{
+    // Busca todos os dados do Supabase
+    const [pedidos,clientes,produtos,agenda,propostas]=await Promise.all([
+      sbGet('pedidos','select=*'),
+      sbGet('clientes','select=*'),
+      sbGet('produtos','select=*'),
+      sbGet('agenda','select=*'),
+      sbGet('propostas','select=*'),
+    ]);
+
+    // Converte para CSV por aba
+    const fmtCSV=(rows,cols)=>{
+      const header=cols.join(';');
+      const lines=rows.map(r=>cols.map(c=>{
+        const v=r[c]??'';
+        const s=typeof v==='object'?JSON.stringify(v):String(v);
+        return '"'+s.replace(/"/g,'""')+'"';
+      }).join(';'));
+      return [header,...lines].join('\n');
+    };
+
+    const hoje=new Date().toISOString().split('T')[0];
+    const nomeArq=`backup_smart_${hoje}.csv`;
+
+    // Exporta pedidos (principal)
+    const csvPedidos=fmtCSV(pedidos,['id','tipo','tri','cliente','evento','uf','produto','descricao','qtde','unitario','total','data_pedido','montagem','prazo_pgto','data_pgto','status_pgto','obs','resp','das','icms','iss','created_at']);
+
+    const blob=new Blob(['\uFEFF'+csvPedidos],{type:'text/csv;charset=utf-8;'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=nomeArq;a.click();
+    URL.revokeObjectURL(url);
+
+    // Também baixa clientes
+    const csvClientes=fmtCSV(clientes,['id','nome','cnpj','tel','email','end','cidade','uf','obs']);
+    const blob2=new Blob(['\uFEFF'+csvClientes],{type:'text/csv;charset=utf-8;'});
+    const url2=URL.createObjectURL(blob2);
+    const a2=document.createElement('a');
+    a2.href=url2;a2.download=`backup_clientes_${hoje}.csv`;a2.click();
+    URL.revokeObjectURL(url2);
+
+    alert(`✅ Backup gerado com sucesso!\n\n📄 backup_smart_${hoje}.csv — Pedidos\n📄 backup_clientes_${hoje}.csv — Clientes\n\nSalve esses arquivos no Google Drive!`);
+  }catch(e){alert('Erro ao gerar backup: '+e.message);}
+}
 
 // NAV
 function showPane(id){
