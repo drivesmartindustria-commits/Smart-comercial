@@ -207,6 +207,10 @@ tbody tr:hover td{background:var(--surface2)}
       <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
       Novo Pedido
     </button>
+    <button class="nav-item" onclick="exportarBackup()" style="background:rgba(21,128,61,0.2);color:#86EFAC;margin-bottom:6px">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+      💾 Backup Excel
+    </button>
     <div style="font-size:10px;color:rgba(255,255,255,0.25);line-height:1.6;padding:0 10px">Smart Indústria © 2026</div>
   </div>
 </aside>
@@ -744,8 +748,8 @@ async function loadData(){
     ]);
     DATA=rPed.map(mapPedido);
     CLIENTES=rCli.map(r=>({id:r.id,nome:r.nome||'',cnpj:r.cnpj||'',tel:r.tel||'',email:r.email||'',end:r.end||'',cidade:r.cidade||'',uf:r.uf||'',obs:r.obs||''})).filter(d=>d.nome);
-    PRODUTOS=rProd.map(r=>({id:r.id,cod:r.cod||'',tipo:r.tipo||'',desc:r.desc||'',preco:parseFloat(r.preco)||0,unid:r.unid||'',obs:r.obs||''})).filter(d=>d.cod||d.desc);
-    AGENDA=rAg.map(r=>({id:r.id,titulo:r.titulo||'',data:r.data||'',hora:r.hora||'',desc:r.desc||'',tipo:r.tipo||'Outro',resp:r.resp||''})).filter(a=>a.titulo);
+    PRODUTOS=rProd.map(r=>({id:r.id,cod:r.cod||'',tipo:r.tipo||'',desc:r.descricao||r.desc||'',preco:parseFloat(r.preco)||0,unid:r.unid||'',obs:r.obs||''})).filter(d=>d.cod||d.desc);
+    AGENDA=rAg.map(r=>({id:r.id,titulo:r.titulo||'',data:r.data||'',hora:r.hora||'',desc:r.descricao||r.desc||'',tipo:r.tipo||'Outro',resp:r.resp||''})).filter(a=>a.titulo);
     NOTAS=rNot.map(r=>({id:r.id,texto:r.texto||'',resp:r.resp||'',data:r.data||''})).filter(n=>n.texto);
     PROPOSTAS=rProp.map(mapProposta).filter(p=>p.cliente);
   }catch(e){console.error('Erro ao carregar:',e);DATA=getDefaultData();}
@@ -758,7 +762,7 @@ async function loadData(){
 }
 
 // Mappers Supabase → objeto interno
-function mapPedido(r){return{id:r.id,tipo:r.tipo||'Locação',tri:r.tri||'',cliente:r.cliente||'',evento:r.evento||'',uf:r.uf||'',produto:r.produto||'',desc:r.desc||'',qtde:parseFloat(r.qtde)||0,unitario:parseFloat(r.unitario)||0,total:parseFloat(r.total)||0,dataPedido:r.data_pedido||'',montagem:r.montagem||'',prazoPgto:r.prazo_pgto||'',dataPgto:r.data_pgto||'',statusPgto:(r.status_pgto||'PENDENTE').toUpperCase(),obs:r.obs||'',resp:r.resp||'',das:parseFloat(r.das)||4,icms:parseFloat(r.icms)||0,iss:parseFloat(r.iss)||0};}
+function mapPedido(r){return{id:r.id,tipo:r.tipo||'Locação',tri:r.tri||'',cliente:r.cliente||'',evento:r.evento||'',uf:r.uf||'',produto:r.produto||'',desc:r.descricao||r.desc||'',qtde:parseFloat(r.qtde)||0,unitario:parseFloat(r.unitario)||0,total:parseFloat(r.total)||0,dataPedido:r.data_pedido||'',montagem:r.montagem||'',prazoPgto:r.prazo_pgto||'',dataPgto:r.data_pgto||'',statusPgto:(r.status_pgto||'PENDENTE').toUpperCase(),obs:r.obs||'',resp:r.resp||'',das:parseFloat(r.das)||4,icms:parseFloat(r.icms)||0,iss:parseFloat(r.iss)||0};}
 function mapProposta(r){let itens=[];try{if(r.itens)itens=typeof r.itens==='string'?JSON.parse(r.itens):r.itens;}catch(e){}return{id:r.id,cliente:r.cliente||'',emp:r.emp||'',tel:r.tel||'',email:r.email||'',produto:r.produto||'',valor:parseFloat(r.valor)||0,resp:r.resp||'',origem:r.origem||'',status:r.status||'Em elaboração',prob:parseFloat(r.prob)||0,dataEnvio:r.data_envio||'',dataEvento:r.data_evento||'',dataLimite:r.data_limite||'',dataFech:r.data_fech||'',acao:r.acao||'',dataAcao:r.data_acao||'',obs:r.obs||'',perda:r.perda||'',itens:itens,desconto:parseFloat(r.desconto)||0};}
 // Mantém funções legadas para compatibilidade interna
 function parsePedidos(rows){return[];}
@@ -1015,12 +1019,6 @@ function toggleGrupo(grupoId){
   if(arrow)arrow.style.transform=hidden?'rotate(90deg)':'rotate(0deg)';
 }
 
-async function deleteGrupo(ids){
-  if(!confirm(`Excluir pedido com ${ids.length} item(s)?`))return;
-  DATA=DATA.filter(d=>!ids.includes(d.id));
-  await rewritePedidos();
-  buildDashboard();
-}
 
 function renderRecebimentos(){
   const today=new Date().toISOString().split('T')[0];
@@ -1632,7 +1630,7 @@ async function fecharNegocio(id){
     resp:p.resp||'',
     das:4,icms:0,iss:0
   };
-  const sbPedido={tipo:novoPedido.tipo,tri:novoPedido.tri,cliente:novoPedido.cliente,evento:novoPedido.evento,uf:novoPedido.uf,produto:novoPedido.produto,desc:novoPedido.desc,qtde:novoPedido.qtde,unitario:novoPedido.unitario,total:novoPedido.total,data_pedido:novoPedido.dataPedido,montagem:novoPedido.montagem||null,prazo_pgto:'',data_pgto:novoPedido.dataPgto||null,status_pgto:novoPedido.statusPgto,obs:novoPedido.obs,resp:novoPedido.resp||'',das:4,icms:0,iss:0};
+  const sbPedido={tipo:novoPedido.tipo,tri:novoPedido.tri,cliente:novoPedido.cliente,evento:novoPedido.evento,uf:novoPedido.uf,produto:novoPedido.produto,descricao:novoPedido.desc||'',qtde:novoPedido.qtde,unitario:novoPedido.unitario,total:novoPedido.total,data_pedido:novoPedido.dataPedido,montagem:novoPedido.montagem||null,prazo_pgto:'',data_pgto:novoPedido.dataPgto||null,status_pgto:novoPedido.statusPgto,obs:novoPedido.obs,resp:novoPedido.resp||'',das:4,icms:0,iss:0};
   const novoDB=await sbInsert('pedidos',sbPedido);
   DATA.push(mapPedido(novoDB[0]));
 
@@ -1843,20 +1841,20 @@ async function submitPedido(){
     if(editPedidoId!==null){
       // Edição: atualiza o item existente
       const item=itensValidos[0];
-      const obj={...base,produto:item.produto,desc:item.desc||'',qtde:item.qtde||1,unitario:item.unit||0,total:item.total||0};
+      const obj={...base,produto:item.produto,descricao:item.desc||'',qtde:item.qtde||1,unitario:item.unit||0,total:item.total||0};
       const updated=await sbUpdate('pedidos',editPedidoId,obj);
       const idx=DATA.findIndex(x=>x.id===editPedidoId);
       if(idx!==-1)DATA[idx]=mapPedido(updated[0]);
       // Se há mais itens, insere os adicionais
       for(let i=1;i<itensValidos.length;i++){
         const it=itensValidos[i];
-        const obj2={...base,produto:it.produto,desc:it.desc||'',qtde:it.qtde||1,unitario:it.unit||0,total:it.total||0};
+        const obj2={...base,produto:it.produto,descricao:it.desc||'',qtde:it.qtde||1,unitario:it.unit||0,total:it.total||0};
         const novo=await sbInsert('pedidos',obj2);
         DATA.push(mapPedido(novo[0]));
       }
     } else {
       for(const item of itensValidos){
-        const obj={...base,produto:item.produto,desc:item.desc||'',qtde:item.qtde||1,unitario:item.unit||0,total:item.total||0};
+        const obj={...base,produto:item.produto,descricao:item.desc||'',qtde:item.qtde||1,unitario:item.unit||0,total:item.total||0};
         const novo=await sbInsert('pedidos',obj);
         DATA.push(mapPedido(novo[0]));
       }
@@ -1913,7 +1911,7 @@ async function rewriteClientes(){/* não usado com Supabase */}
 // PRODUTOS CRUD
 async function submitProduto(){
   const cod=document.getElementById('fp-cod').value.trim();const desc=document.getElementById('fp-desc').value.trim();if(!cod||!desc){const m=document.getElementById('form-produto-msg');m.className='form-msg err';m.textContent='Código e descrição obrigatórios.';return;}
-  const d={cod,tipo:document.getElementById('fp-tipo').value,desc,preco:parseFloat(document.getElementById('fp-preco').value)||0,unid:document.getElementById('fp-unid').value.trim(),obs:document.getElementById('fp-obs').value.trim()};
+  const d={cod,tipo:document.getElementById('fp-tipo').value,descricao:desc,desc,preco:parseFloat(document.getElementById('fp-preco').value)||0,unid:document.getElementById('fp-unid').value.trim(),obs:document.getElementById('fp-obs').value.trim()};
   const btn=document.querySelector('#form-produto .btn-green');btn.textContent='Salvando...';btn.disabled=true;
   try{
     if(editProdutoId!==null){const idx=PRODUTOS.findIndex(x=>x.id===editProdutoId);if(idx!==-1){const upd=await sbUpdate('produtos',editProdutoId,d);PRODUTOS[idx]={...PRODUTOS[idx],...upd[0]};}}
@@ -1931,7 +1929,7 @@ async function submitAgenda(){
   const titulo=document.getElementById('fa-titulo').value.trim();const data=document.getElementById('fa-data').value;const resp=document.getElementById('fa-resp').value;
   if(!titulo||!data){const m=document.getElementById('form-agenda-msg');m.className='form-msg err';m.textContent='Título e data obrigatórios.';return;}
   if(!resp){const m=document.getElementById('form-agenda-msg');m.className='form-msg err';m.textContent='Selecione o responsável.';return;}
-  const d={titulo,data,hora:document.getElementById('fa-hora').value,desc:document.getElementById('fa-desc').value.trim(),tipo:document.getElementById('fa-tipo').value,resp};
+  const d={titulo,data,hora:document.getElementById('fa-hora').value,descricao:document.getElementById('fa-desc').value.trim(),desc:document.getElementById('fa-desc').value.trim(),tipo:document.getElementById('fa-tipo').value,resp};
   const btn=document.querySelector('#form-agenda .btn-green');btn.textContent='Salvando...';btn.disabled=true;
   try{
     if(editAgendaId!==null){const idx=AGENDA.findIndex(x=>x.id===editAgendaId);if(idx!==-1){const upd=await sbUpdate('agenda',editAgendaId,d);AGENDA[idx]={...AGENDA[idx],...upd[0]};}}
