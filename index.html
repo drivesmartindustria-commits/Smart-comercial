@@ -425,7 +425,7 @@ tbody tr:hover td{background:var(--surface2)}
     <div class="form-sub">Salvo automaticamente no banco de dados.</div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Tipo *</label><select class="form-select" id="f-tipo"><option value="Locação">Locação</option><option value="Venda">Venda</option></select></div>
-      <div class="form-group"><label class="form-label">Data do Pedido *</label><input class="form-input" id="f-data" type="date"/></div>
+      <div class="form-group"><label class="form-label">Data do Pedido *</label><input class="form-input" id="f-data" type="date" oninput="calcDataPgto()"/></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Cliente *</label><input class="form-input" id="f-cliente" type="text" list="clientes-list" placeholder="Selecione ou digite..."/><datalist id="clientes-list"></datalist></div>
@@ -494,11 +494,11 @@ tbody tr:hover td{background:var(--surface2)}
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Data Montagem</label><input class="form-input" id="f-montagem" type="date"/></div>
-      <div class="form-group"><label class="form-label">Prazo Pgto (dias)</label><input class="form-input" id="f-prazo" type="number" placeholder="Ex: 30"/></div>
+      <div class="form-group"><label class="form-label">Prazo Pgto (dias)</label><input class="form-input" id="f-prazo" type="number" placeholder="Ex: 30" oninput="calcDataPgto()"/></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Data Pagamento</label><input class="form-input" id="f-datapgto" type="date"/></div>
-      <div class="form-group"><label class="form-label">Status Pgto</label><select class="form-select" id="f-statuspgto"><option value="PENDENTE">PENDENTE</option><option value="PAGO">PAGO</option><option value="NÃO">NÃO PAGO</option></select></div>
+      <div class="form-group"><label class="form-label">Data Pagamento <span style="font-size:10px;color:var(--text3);font-weight:400">(calculada automaticamente)</span></label><input class="form-input" id="f-datapgto" type="date" readonly style="background:var(--surface2);color:var(--text2);cursor:default"/></div>
+      <div class="form-group"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Responsável *</label><select class="form-select" id="f-resp"><option value="">Selecione...</option><option>Robson</option><option>Alessandra</option><option>Marcelo</option><option>Sandro</option><option>Júlio</option></select></div>
@@ -1280,6 +1280,18 @@ function calcTotal(){
   // Mantido por compatibilidade (não mais usado diretamente)
   calcImpostos();
 }
+function calcDataPgto(){
+  const prazo=parseInt(document.getElementById('f-prazo').value)||0;
+  const dataPedido=document.getElementById('f-data').value;
+  const el=document.getElementById('f-datapgto');
+  if(prazo>0&&dataPedido){
+    const base=new Date(dataPedido+'T00:00:00');
+    base.setDate(base.getDate()+prazo);
+    el.value=base.toISOString().split('T')[0];
+  } else {
+    el.value='';
+  }
+}
 function calcImpostos(){
   const total=parseFloat(document.getElementById('f-total').value)||0;
   const das=parseFloat(document.getElementById('f-das').value)||0;
@@ -1839,7 +1851,6 @@ function openForm(type){
     document.getElementById('f-tipo').value='Locação';
     document.getElementById('f-data').value=today;
     document.getElementById('f-uf').value='SP';
-    document.getElementById('f-statuspgto').value='PENDENTE';
     document.getElementById('f-resp').value='';
     document.getElementById('f-das').value='4';
     document.getElementById('f-icms').value='0';
@@ -1899,7 +1910,7 @@ async function submitPedido(){
   const das=parseFloat(document.getElementById('f-das').value)||4;
   const icms=parseFloat(document.getElementById('f-icms').value)||0;
   const iss=parseFloat(document.getElementById('f-iss').value)||0;
-  const base={tipo:document.getElementById('f-tipo').value,tri:getTri(dataPedido),cliente,evento:document.getElementById('f-evento').value.trim(),uf:document.getElementById('f-uf').value,data_pedido:dataPedido,montagem:document.getElementById('f-montagem').value||null,prazo_pgto:document.getElementById('f-prazo').value||'',data_pgto:document.getElementById('f-datapgto').value||null,status_pgto:document.getElementById('f-statuspgto').value,obs:document.getElementById('f-obs').value.trim(),resp:document.getElementById('f-resp').value,das,icms,iss};
+  const base={tipo:document.getElementById('f-tipo').value,tri:getTri(dataPedido),cliente,evento:document.getElementById('f-evento').value.trim(),uf:document.getElementById('f-uf').value,data_pedido:dataPedido,montagem:document.getElementById('f-montagem').value||null,prazo_pgto:document.getElementById('f-prazo').value||'',data_pgto:document.getElementById('f-datapgto').value||null,status_pgto:'PENDENTE',obs:document.getElementById('f-obs').value.trim(),resp:document.getElementById('f-resp').value,das,icms,iss};
   const btn=document.querySelector('#form-pedido .btn-green');btn.textContent='Salvando...';btn.disabled=true;
   try{
     if(editPedidoId!==null){
@@ -1940,7 +1951,6 @@ function openEditPedido(id){
   document.getElementById('f-montagem').value=d.montagem||'';
   document.getElementById('f-prazo').value=d.prazoPgto||'';
   document.getElementById('f-datapgto').value=d.dataPgto||'';
-  document.getElementById('f-statuspgto').value=d.statusPgto||'PENDENTE';
   document.getElementById('f-resp').value=d.resp||'';
   document.getElementById('f-obs').value=d.obs||'';
   document.getElementById('f-das').value=d.das||4;
