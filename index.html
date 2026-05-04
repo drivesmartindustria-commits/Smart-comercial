@@ -390,7 +390,7 @@ tbody tr:hover td{background:var(--surface2)}
   <div class="card section">
     <div class="form-group"><label class="form-label">Nova anotação</label><textarea class="form-textarea" id="nota-text" placeholder="Digite sua anotação..."></textarea></div>
     <div style="display:flex;gap:8px;align-items:center">
-      <select class="form-select" id="nota-resp" style="max-width:160px"><option value="">Responsável</option><option>Robson</option><option>Alessandra</option><option>Marcelo</option><option>Sandro</option><option>Júlio</option></select>
+      <input class="form-input" id="nota-resp" type="text" list="resp-list" placeholder="Responsável" style="max-width:160px"/>
       <button class="btn btn-green" onclick="saveNota()">💾 Salvar</button>
     </div>
   </div>
@@ -494,14 +494,14 @@ tbody tr:hover td{background:var(--surface2)}
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Data Montagem</label><input class="form-input" id="f-montagem" type="date"/></div>
-      <div class="form-group"><label class="form-label">Prazo Pgto (dias)</label><input class="form-input" id="f-prazo" type="number" placeholder="Ex: 30" oninput="calcDataPgto()"/></div>
+      <div class="form-group"><label class="form-label">Prazo Pgto (dias)</label><input class="form-input" id="f-prazo" type="text" inputmode="numeric" placeholder="Ex: 30" oninput="calcDataPgto()"/></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Data Pagamento <span style="font-size:10px;color:var(--text3);font-weight:400">(calculada automaticamente)</span></label><input class="form-input" id="f-datapgto" type="date" readonly style="background:var(--surface2);color:var(--text2);cursor:default"/></div>
       <div class="form-group"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Responsável *</label><select class="form-select" id="f-resp"><option value="">Selecione...</option><option>Robson</option><option>Alessandra</option><option>Marcelo</option><option>Sandro</option><option>Júlio</option></select></div>
+      <div class="form-group"><label class="form-label">Responsável *</label><input class="form-input" id="f-resp" type="text" list="resp-list" placeholder="Selecione ou digite..."/><datalist id="resp-list"><option value="Robson"/><option value="Alessandra"/><option value="Marcelo"/><option value="Sandro"/><option value="Júlio"/></datalist></div>
       <div class="form-group"><label class="form-label">Observações</label><input class="form-input" id="f-obs" type="text" placeholder="Observações..."/></div>
     </div>
     <div class="form-actions"><button class="btn btn-green" onclick="submitPedido()">💾 Salvar</button><button class="btn-outline" onclick="closeAllForms()">Cancelar</button></div>
@@ -566,7 +566,7 @@ tbody tr:hover td{background:var(--surface2)}
     <div class="form-group"><label class="form-label">Descrição</label><input class="form-input" id="fa-desc" type="text" placeholder="Detalhes..."/></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Tipo</label><select class="form-select" id="fa-tipo"><option>Reunião</option><option>Entrega</option><option>Pagamento</option><option>Visita</option><option>Outro</option></select></div>
-      <div class="form-group"><label class="form-label">Responsável *</label><select class="form-select" id="fa-resp"><option value="">Selecione...</option><option>Robson</option><option>Alessandra</option><option>Marcelo</option><option>Sandro</option><option>Júlio</option></select></div>
+      <div class="form-group"><label class="form-label">Responsável *</label><input class="form-input" id="fa-resp" type="text" list="resp-list" placeholder="Selecione ou digite..."/></div>
     </div>
     <div class="form-actions"><button class="btn btn-green" onclick="submitAgenda()">💾 Salvar</button><button class="btn-outline" onclick="closeAllForms()">Cancelar</button></div>
     <div class="form-msg" id="form-agenda-msg"></div>
@@ -578,7 +578,7 @@ tbody tr:hover td{background:var(--surface2)}
   <div class="form-box" style="max-width:480px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><div class="form-title" style="margin-bottom:0">Editar Anotação</div><button onclick="closeAllForms()" style="background:none;border:1px solid var(--border2);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px;color:var(--text2);flex-shrink:0">✕ Fechar</button></div>
     <div class="form-group"><label class="form-label">Texto</label><textarea class="form-textarea" id="nota-edit-text"></textarea></div>
-    <div class="form-group"><label class="form-label">Responsável</label><select class="form-select" id="nota-edit-resp"><option value="">—</option><option>Robson</option><option>Alessandra</option><option>Marcelo</option><option>Sandro</option><option>Júlio</option></select></div>
+    <div class="form-group"><label class="form-label">Responsável</label><input class="form-input" id="nota-edit-resp" type="text" list="resp-list" placeholder="Selecione ou digite..."/></div>
     <div class="form-actions"><button class="btn btn-green" onclick="saveEditNota()">💾 Salvar</button><button class="btn-outline" onclick="closeAllForms()">Cancelar</button></div>
   </div>
 </div>
@@ -632,7 +632,7 @@ tbody tr:hover td{background:var(--surface2)}
     <input type="hidden" id="pp-valor"/>
     <input type="hidden" id="pp-produto"/>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Responsável *</label><select class="form-select" id="pp-resp"><option value="">Selecione...</option><option>Robson</option><option>Alessandra</option><option>Marcelo</option><option>Sandro</option><option>Júlio</option></select></div>
+      <div class="form-group"><label class="form-label">Responsável *</label><input class="form-input" id="pp-resp" type="text" list="resp-list" placeholder="Selecione ou digite..."/></div>
       <div class="form-group"><label class="form-label">Origem do Lead</label><select class="form-select" id="pp-origem"><option value="">—</option><option>Indicação</option><option>Instagram</option><option>LinkedIn</option><option>Site</option><option>WhatsApp</option><option>Evento</option><option>Prospecção</option><option>Outro</option></select></div>
     </div>
     <!-- Status e forecast -->
