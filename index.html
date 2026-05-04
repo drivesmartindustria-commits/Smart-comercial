@@ -705,8 +705,10 @@ async function sbDelete(table,id){
   if(!r.ok)throw new Error(await r.text());
 }
 async function sbDeleteMany(table,ids){
-  const r=await fetch(`${SUPA_URL}/rest/v1/${table}?id=in.(${ids.join(',')})`,{method:'DELETE',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'}});
-  if(!r.ok)throw new Error(await r.text());
+  // Deleta um por um para garantir compatibilidade
+  for(const id of ids){
+    await sbDelete(table,id);
+  }
 }
 const TRI_COLORS={'1º TRI-26':'#2563EB','2º TRI-26':'#0D9488','3º TRI-26':'#EA580C','4º TRI-26':'#9333EA'};
 const RESP_COLORS={'Robson':'#2563EB','Alessandra':'#DB2777','Marcelo':'#EA580C','Sandro':'#0D9488','Júlio':'#9333EA'};
