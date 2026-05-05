@@ -2286,6 +2286,7 @@ async function marcarPago1(id){
     await marcarPedidoPago([id]);
   });
 }
+async function marcarPedidoPago(ids){
   try{
     for(const id of ids){
       await sbUpdate('pedidos',id,{status_pgto:'PAGO',data_pgto:new Date().toISOString().split('T')[0]});
@@ -2334,7 +2335,7 @@ function doLogin(){if(document.getElementById('login-pwd').value===SENHA){docume
 </div>
 
 <!-- MODAL CONFIRMAÇÃO -->
-<div id="modal-confirm" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1200;display:none;align-items:center;justify-content:center">
+<div id="modal-confirm" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1200;display:none;align-items:center;justify-content:center">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 28px 20px;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.3)">
     <div id="confirm-msg" style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:20px;line-height:1.4"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end">
