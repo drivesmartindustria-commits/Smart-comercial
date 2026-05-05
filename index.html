@@ -1046,7 +1046,7 @@ function renderRecebimentos(){
     <td><span class="tag ${d.statusPgto==='PAGO'?'tag-pago':d.statusPgto==='PENDENTE'?'tag-pend':'tag-nao'}">${d.statusPgto}</span></td>
     <td>${d.resp?`<span style="font-size:10px;padding:1px 7px;border-radius:10px;background:${rc(d.resp)}1A;color:${rc(d.resp)}">${d.resp}</span>`:'—'}</td>
     <td>
-      <button onclick="reverterPendente(${d.id})" style="background:#FFF7ED;border:1px solid #FCD34D;border-radius:5px;padding:3px 9px;cursor:pointer;font-size:11px;color:#B45309;font-weight:600" title="Reverter para Pendente">↩ Pendente</button>
+      <button onclick="reverterPendente(${d.id})" style="background:#FFF7ED;border:1px solid #FCD34D;border-radius:5px;padding:3px 9px;cursor:pointer;font-size:11px;color:#B45309;font-weight:600" title="Estornar pagamento">↩ Estornar</button>
     </td>
   </tr>`).join('');
 }
@@ -2269,7 +2269,7 @@ function openViewPedido(chave){
 }
 
 async function reverterPendente(id){
-  showConfirm('Reverter este pedido para PENDENTE?',async()=>{
+  showConfirm('Estornar pagamento? O pedido voltará para Em Aberto.',async()=>{
     try{
       await sbUpdate('pedidos',id,{status_pgto:'PENDENTE'});
       const idx=DATA.findIndex(x=>x.id===id);
