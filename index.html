@@ -493,7 +493,7 @@ tbody tr:hover td{background:var(--surface2)}
       </div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Data Montagem</label><input class="form-input" id="f-montagem" type="date"/></div>
+      <div class="form-group"><label class="form-label">Data Montagem</label><input class="form-input" id="f-montagem" type="date" oninput="calcDataPgto()"/></div>
       <div class="form-group"><label class="form-label">Prazo Pgto (dias)</label><input class="form-input" id="f-prazo" type="text" inputmode="numeric" placeholder="Ex: 30" oninput="calcDataPgto()"/></div>
     </div>
     <div class="form-row">
@@ -1282,12 +1282,14 @@ function calcTotal(){
 }
 function calcDataPgto(){
   const prazo=parseInt(document.getElementById('f-prazo').value)||0;
+  const dataMontagem=document.getElementById('f-montagem').value;
   const dataPedido=document.getElementById('f-data').value;
+  const base=dataMontagem||dataPedido; // usa montagem se preenchida, senão data do pedido
   const el=document.getElementById('f-datapgto');
-  if(prazo>0&&dataPedido){
-    const base=new Date(dataPedido+'T00:00:00');
-    base.setDate(base.getDate()+prazo);
-    el.value=base.toISOString().split('T')[0];
+  if(prazo>0&&base){
+    const dt=new Date(base+'T00:00:00');
+    dt.setDate(dt.getDate()+prazo);
+    el.value=dt.toISOString().split('T')[0];
   } else {
     el.value='';
   }
