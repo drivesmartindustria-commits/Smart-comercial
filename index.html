@@ -595,7 +595,7 @@ tbody tr:hover td{background:var(--surface2)}
     <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">👤 Dados do Cliente</div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Nome do Cliente *</label><input class="form-input" id="pp-cliente" type="text" list="clientes-list" placeholder="Nome ou empresa"/></div>
-      <div class="form-group"><label class="form-label">Empreendimento</label><input class="form-input" id="pp-emp" type="text" placeholder="Ex: Casa Giardini"/></div>
+      <div class="form-group"><label class="form-label">Evento</label><input class="form-input" id="pp-emp" type="text" placeholder="Ex: Casa Giardini"/></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Telefone</label><input class="form-input" id="pp-tel" type="text" placeholder="(11) 99999-9999"/></div>
@@ -656,10 +656,6 @@ tbody tr:hover td{background:var(--surface2)}
     <div class="form-row">
       <div class="form-group"><label class="form-label">Data Envio Proposta</label><input class="form-input" id="pp-dataenvio" type="date"/></div>
       <div class="form-group"><label class="form-label">Data do Evento</label><input class="form-input" id="pp-dataevento" type="date"/></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Data Limite Resposta</label><input class="form-input" id="pp-datalimite" type="date"/></div>
-      <div class="form-group"><label class="form-label">Data Estimada Fechamento</label><input class="form-input" id="pp-datafech" type="date"/></div>
     </div>
     <!-- Ações -->
     <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 10px">⚡ Próxima Ação</div>
@@ -1207,6 +1203,47 @@ async function deleteNota(id){
 // ── ITENS DO PEDIDO ──────────────────────────────────────────────────────────
 let pedidoItens=[];
 
+function filtrarProduto(itemId, tipo, query){
+  const drop=document.getElementById('drop-'+itemId);
+  if(!drop)return;
+  const q=(query||'').toLowerCase().trim();
+  const lista=q.length===0
+    ? PRODUTOS.slice(0,12)
+    : PRODUTOS.filter(p=>(p.cod+' '+p.desc).toLowerCase().includes(q)).slice(0,12);
+  if(lista.length===0){drop.style.display='none';return;}
+  drop.style.display='block';
+  drop.innerHTML=lista.map(p=>`
+    <div onmousedown="selecionarProduto('${itemId}','${tipo}','${p.cod.replace(/'/g,"\\'")}','${p.desc.replace(/'/g,"\\'")}',${p.preco||0},'${p.unid||'un'}')"
+      style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"
+      onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <span><strong style="color:var(--text)">${p.cod}</strong> <span style="color:var(--text2)">– ${p.desc}</span></span>
+      <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--green)">R$ ${p.preco.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+    </div>`).join('');
+}
+function fecharDropdown(itemId){
+  const drop=document.getElementById('drop-'+itemId);
+  if(drop)drop.style.display='none';
+}
+function selecionarProduto(itemId, tipo, cod, desc, preco, unid){
+  fecharDropdown(itemId);
+  const inp=document.getElementById((tipo==='pedido'?'f':'pp')+'-item-prod-'+itemId);
+  if(inp)inp.value=cod;
+  if(tipo==='pedido'){
+    const item=pedidoItens.find(x=>x.id===itemId);
+    if(item){item.produto=cod;item.desc=desc;item.unit=preco;item.total=(item.qtde||1)*preco;}
+    const descEl=document.getElementById('f-item-desc-'+itemId);
+    const unitEl=document.getElementById('f-item-unit-'+itemId);
+    if(descEl)descEl.value=desc;
+    if(unitEl)unitEl.value=preco;
+    renderItensPedido();
+  } else {
+    const item=propostaItens.find(x=>x.id==itemId);
+    if(item){item.produto=cod;item.unid=unid;item.unit=preco;item.total=(item.qtde||1)*preco;}
+    const unidEl=document.querySelector(`#pp-item-prod-${itemId}`)?.closest('tr')?.querySelector('input[placeholder="un"]');
+    if(unidEl)unidEl.value=unid;
+    renderItensTable();
+  }
+}
 function addItemPedido(item=null){
   const id=Date.now()+'_'+Math.random().toString(36).slice(2,6);
   pedidoItens.push({id,produto:item?item.produto:'',desc:item?item.desc:'',qtde:item?item.qtde:1,unit:item?item.unitario:0,total:item?(item.qtde||1)*(item.unitario||0):0});
@@ -1238,7 +1275,6 @@ function updateItemPedido(id,field,value){
 
 function renderItensPedido(){
   const tbody=document.getElementById('f-itens-body');if(!tbody)return;
-  const prodOpts=PRODUTOS.map(p=>`<option value="${p.cod}">`).join('');
   if(pedidoItens.length===0){
     tbody.innerHTML=`<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text3);font-size:12px">Nenhum item. Clique em "+ Adicionar Item".</td></tr>`;
     document.getElementById('f-total-geral').textContent='R$ 0,00';
@@ -1248,15 +1284,15 @@ function renderItensPedido(){
   }
   tbody.innerHTML=pedidoItens.map(item=>`
     <tr style="border-top:1px solid var(--border)">
-      <td style="padding:6px 8px">
-        <input list="f-prod-opts" value="${item.produto}" onchange="updateItemPedido('${item.id}','produto',this.value)" oninput="updateItemPedido('${item.id}','produto',this.value)" id="f-item-prod-${item.id}" placeholder="Produto..." style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text)"/>
-        <datalist id="f-prod-opts">${prodOpts}</datalist>
+      <td style="padding:6px 8px;position:relative">
+        <input value="${item.produto}" oninput="filtrarProduto('${item.id}','pedido',this.value)" onfocus="filtrarProduto('${item.id}','pedido',this.value)" onblur="setTimeout(()=>fecharDropdown('${item.id}'),150)" id="f-item-prod-${item.id}" placeholder="Produto..." style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text)"/>
+        <div id="drop-${item.id}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:500;max-height:180px;overflow-y:auto"></div>
       </td>
       <td style="padding:6px 8px">
-        <input value="${item.desc}" id="f-item-desc-${item.id}" onchange="updateItemPedido('${item.id}','desc',this.value)" placeholder="Descrição..." style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text)"/>
+        <input value="${item.desc}" id="f-item-desc-${item.id}" oninput="updateItemPedido('${item.id}','desc',this.value)" placeholder="Descrição..." style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text)"/>
       </td>
       <td style="padding:6px 8px;text-align:center">
-        <input type="number" min="1" value="${item.qtde||1}" onchange="updateItemPedido('${item.id}','qtde',this.value)" oninput="updateItemPedido('${item.id}','qtde',this.value)" style="width:55px;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);text-align:center"/>
+        <input type="text" inputmode="numeric" value="${item.qtde||1}" oninput="updateItemPedido('${item.id}','qtde',this.value)" style="width:55px;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);text-align:center"/>
       </td>
       <td style="padding:6px 8px;text-align:right">
         <input type="number" min="0" step="0.01" value="${item.unit||''}" id="f-item-unit-${item.id}" onchange="updateItemPedido('${item.id}','unit',this.value)" oninput="updateItemPedido('${item.id}','unit',this.value)" placeholder="0,00" style="width:75px;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);text-align:right"/>
@@ -1387,18 +1423,17 @@ function renderItensTable(){
     document.getElementById('pp-produto').value='';
     return;
   }
-  const prodOpts=PRODUTOS.map(p=>`<option value="${p.cod}">`).join('');
   tbody.innerHTML=propostaItens.map(item=>`
     <tr style="border-top:1px solid var(--border)">
-      <td style="padding:6px 8px">
-        <input list="pp-prod-opts" value="${item.produto}" onchange="updateItem(${item.id},'produto',this.value)" oninput="updateItem(${item.id},'produto',this.value)" id="pp-item-prod-${item.id}" placeholder="Produto..." style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text)"/>
-        <datalist id="pp-prod-opts">${prodOpts}</datalist>
+      <td style="padding:6px 8px;position:relative">
+        <input value="${item.produto}" oninput="filtrarProduto(${item.id},'proposta',this.value)" onfocus="filtrarProduto(${item.id},'proposta',this.value)" onblur="setTimeout(()=>fecharDropdown(${item.id}),150)" id="pp-item-prod-${item.id}" placeholder="Produto..." style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text)"/>
+        <div id="drop-${item.id}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:500;max-height:180px;overflow-y:auto"></div>
       </td>
       <td style="padding:6px 8px">
-        <input value="${item.unid}" onchange="updateItem(${item.id},'unid',this.value)" placeholder="un" style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);text-align:center"/>
+        <input value="${item.unid}" oninput="updateItem(${item.id},'unid',this.value)" placeholder="un" style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);text-align:center"/>
       </td>
       <td style="padding:6px 8px;text-align:center">
-        <input type="number" min="1" value="${item.qtde||1}" onchange="updateItem(${item.id},'qtde',this.value)" oninput="updateItem(${item.id},'qtde',this.value)" style="width:60px;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);text-align:center"/>
+        <input type="text" inputmode="numeric" value="${item.qtde||1}" oninput="updateItem(${item.id},'qtde',this.value)" style="width:60px;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);text-align:center"/>
       </td>
       <td style="padding:6px 8px;text-align:right">
         <input type="number" min="0" step="0.01" value="${item.unit||''}" onchange="updateItem(${item.id},'unit',this.value)" oninput="updateItem(${item.id},'unit',this.value)" placeholder="0,00" style="width:80px;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);text-align:right"/>
@@ -1523,7 +1558,8 @@ function renderPipeline(){
       ${p.perda?`<div style="font-size:11px;color:var(--red);margin-top:4px">❌ Motivo da perda: ${p.perda}</div>`:''}
       <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
         <button onclick="openEditProposta(${p.id})" style="background:none;border:1px solid var(--border2);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px">✏️ Editar</button>
-        <button onclick="gerarPDFDireto(${p.id})" style="background:none;border:1px solid var(--border2);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px">📄 PDF</button>
+        <button onclick="duplicarProposta(${p.id})" style="background:none;border:1px solid var(--border2);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px">📋 Duplicar</button>
+        <button onclick="gerarPDFDireto(${p.id})" style="background:#EFF6FF;border:1px solid #93C5FD;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;color:#1D4ED8;font-weight:600">📄 PDF</button>
         ${p.status!=='Fechada'&&p.status!=='Perdida'?`<button onclick="fecharNegocio(${p.id})" style="background:#15803D;border:none;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:11px;color:#fff;font-weight:600">✅ Fechar Negócio</button>`:''}
         ${p.status==='Fechada'?`<span style="font-size:11px;padding:4px 10px;border-radius:6px;background:var(--green-bg);color:var(--green);font-weight:600">✅ Convertido em Pedido</span>`:''}
         <button onclick="deleteProposta(${p.id})" style="background:none;border:1px solid #FCA5A5;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;color:var(--red)">🗑️</button>
@@ -1600,10 +1636,10 @@ async function submitProposta(){
   try{
     if(editPropostaId!==null){
       const idx=PROPOSTAS.findIndex(x=>x.id===editPropostaId);
-      const sbObj2={cliente:d.cliente,emp:d.emp,tel:d.tel,email:d.email,produto:d.produto,valor:d.valor,resp:d.resp,origem:d.origem,status:d.status,prob:d.prob,data_envio:d.dataEnvio||null,data_evento:d.dataEvento||null,data_limite:d.dataLimite||null,data_fech:d.dataFech||null,acao:d.acao,data_acao:d.dataAcao||null,obs:d.obs,perda:d.perda,itens:d.itens||[],desconto:d.desconto||0};
+      const sbObj2={cliente:d.cliente,emp:d.emp,tel:d.tel,email:d.email,produto:d.produto,valor:d.valor,resp:d.resp,origem:d.origem,status:d.status,prob:d.prob,data_envio:d.dataEnvio||null,data_evento:d.dataEvento||null,acao:d.acao,data_acao:d.dataAcao||null,obs:d.obs,perda:d.perda,itens:d.itens||[],desconto:d.desconto||0};
       if(idx!==-1){const upd=await sbUpdate('propostas',editPropostaId,sbObj2);PROPOSTAS[idx]=mapProposta(upd[0]);}
     } else {
-      const sbObj={cliente:d.cliente,emp:d.emp,tel:d.tel,email:d.email,produto:d.produto,valor:d.valor,resp:d.resp,origem:d.origem,status:d.status,prob:d.prob,data_envio:d.dataEnvio||null,data_evento:d.dataEvento||null,data_limite:d.dataLimite||null,data_fech:d.dataFech||null,acao:d.acao,data_acao:d.dataAcao||null,obs:d.obs,perda:d.perda,itens:d.itens||[],desconto:d.desconto||0};
+      const sbObj={cliente:d.cliente,emp:d.emp,tel:d.tel,email:d.email,produto:d.produto,valor:d.valor,resp:d.resp,origem:d.origem,status:d.status,prob:d.prob,data_envio:d.dataEnvio||null,data_evento:d.dataEvento||null,acao:d.acao,data_acao:d.dataAcao||null,obs:d.obs,perda:d.perda,itens:d.itens||[],desconto:d.desconto||0};
       const novo=await sbInsert('propostas',sbObj);PROPOSTAS.push({...mapProposta(novo[0])});
     }
     renderPipeline();
@@ -1664,6 +1700,27 @@ async function fecharNegocio(id){
 }
 
 // GERAR PDF
+function duplicarProposta(id){
+  const p=PROPOSTAS.find(x=>x.id===id);if(!p)return;
+  // Abre o form de nova proposta pré-preenchido com os dados da proposta original
+  openForm('proposta');
+  setTimeout(()=>{
+    document.getElementById('pp-cliente').value=p.cliente||'';
+    document.getElementById('pp-emp').value=p.emp||'';
+    document.getElementById('pp-tel').value=p.tel||'';
+    document.getElementById('pp-email').value=p.email||'';
+    document.getElementById('pp-resp').value=p.resp||'';
+    document.getElementById('pp-origem').value=p.origem||'Outro';
+    document.getElementById('pp-status').value='Em elaboração';
+    document.getElementById('pp-prob').value=p.prob||0;
+    document.getElementById('pp-obs').value=p.obs||'';
+    document.getElementById('pp-desconto').value=p.desconto||0;
+    // Itens
+    propostaItens=(p.itens||[]).map(it=>({...it,id:Date.now()+Math.random()}));
+    renderItensTable();
+    document.getElementById('form-proposta-title').textContent='Nova Proposta (cópia)';
+  },80);
+}
 function gerarPDFDireto(id){
   const p=PROPOSTAS.find(x=>x.id===id);if(!p)return;
   gerarPDFProposta(p);
@@ -1893,7 +1950,7 @@ function openForm(type){
   } else if(type==='proposta'){
     editPropostaId=null;
     propostaItens=[];
-    ['pp-cliente','pp-emp','pp-tel','pp-email','pp-dataenvio','pp-dataevento','pp-datalimite','pp-datafech','pp-acao','pp-dataacao','pp-obs','pp-perda'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    ['pp-cliente','pp-emp','pp-tel','pp-email','pp-dataenvio','pp-dataevento','pp-acao','pp-dataacao','pp-obs','pp-perda'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     document.getElementById('pp-resp').value='';
     document.getElementById('pp-origem').value='';
     document.getElementById('pp-status').value='Em elaboração';
