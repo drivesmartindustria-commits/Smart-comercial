@@ -203,7 +203,7 @@ tbody tr:hover td{background:var(--surface2)}
     Anotações
   </button>
   <div style="margin-top:auto;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1)">
-    <button class="nav-item" onclick="openForm('pedido')" style="background:rgba(37,99,235,0.2);color:#93C5FD;margin-bottom:6px">
+    <button class="nav-item" onclick="showPane('pedidos')" style="background:rgba(37,99,235,0.2);color:#93C5FD;margin-bottom:6px">
       <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
       Novo Pedido
     </button>
@@ -227,7 +227,6 @@ tbody tr:hover td{background:var(--surface2)}
     <div><div class="page-title">Painel Comercial</div><div class="page-sub">Locações e Vendas — Smart Indústria 2026</div></div>
     <div class="topbar-right">
       <span class="chip chip-ok" id="status-chip">✓ Em dia</span>
-      <button class="btn" onclick="openForm('pedido')">+ Novo Pedido</button>
       <button class="btn-outline" onclick="loadData()">↻ Atualizar</button>
     </div>
   </div>
@@ -271,7 +270,6 @@ tbody tr:hover td{background:var(--surface2)}
     <div><div class="page-title">Locações e Vendas</div><div class="page-sub">Todos os pedidos registrados</div></div>
     <div class="topbar-right">
       <button class="btn-outline" onclick="exportarBackup()" title="Exportar todos os dados para Excel">💾 Backup Excel</button>
-      <button class="btn" onclick="openForm('pedido')">+ Novo Pedido</button>
     </div>
   </div>
   <div class="card">
@@ -1208,16 +1206,19 @@ function filtrarProduto(itemId, tipo, query){
   if(!drop)return;
   const q=(query||'').toLowerCase().trim();
   const lista=q.length===0
-    ? PRODUTOS.slice(0,12)
-    : PRODUTOS.filter(p=>(p.cod+' '+p.desc).toLowerCase().includes(q)).slice(0,12);
+    ? PRODUTOS.slice(0,15)
+    : PRODUTOS.filter(p=>
+        (p.cod||'').toLowerCase().includes(q)||
+        (p.desc||'').toLowerCase().includes(q)
+      ).slice(0,15);
   if(lista.length===0){drop.style.display='none';return;}
   drop.style.display='block';
   drop.innerHTML=lista.map(p=>`
-    <div onmousedown="selecionarProduto('${itemId}','${tipo}','${p.cod.replace(/'/g,"\\'")}','${p.desc.replace(/'/g,"\\'")}',${p.preco||0},'${p.unid||'un'}')"
+    <div onmousedown="selecionarProduto('${itemId}','${tipo}',${JSON.stringify(p.cod)},${JSON.stringify(p.desc)},${p.preco||0},${JSON.stringify(p.unid||'un')})"
       style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"
       onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
-      <span><strong style="color:var(--text)">${p.cod}</strong> <span style="color:var(--text2)">– ${p.desc}</span></span>
-      <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--green)">R$ ${p.preco.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+      <span><strong style="color:var(--text)">${p.cod||'—'}</strong> <span style="color:var(--text2)">– ${p.desc}</span></span>
+      <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--green);white-space:nowrap;margin-left:8px">R$ ${(p.preco||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
     </div>`).join('');
 }
 function fecharDropdown(itemId){
@@ -1292,7 +1293,7 @@ function renderItensPedido(){
         <input value="${item.desc}" id="f-item-desc-${item.id}" oninput="updateItemPedido('${item.id}','desc',this.value)" placeholder="Descrição..." style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text)"/>
       </td>
       <td style="padding:6px 8px;text-align:center">
-        <input type="text" inputmode="numeric" value="${item.qtde||1}" oninput="updateItemPedido('${item.id}','qtde',this.value)" style="width:55px;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);text-align:center"/>
+        <input type="text" inputmode="numeric" value="${item.qtde||1}" oninput="updateItemPedido('${item.id}','qtde',this.value)" onchange="updateItemPedido('${item.id}','qtde',this.value)" style="width:55px;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);text-align:center"/>
       </td>
       <td style="padding:6px 8px;text-align:right">
         <input type="number" min="0" step="0.01" value="${item.unit||''}" id="f-item-unit-${item.id}" onchange="updateItemPedido('${item.id}','unit',this.value)" oninput="updateItemPedido('${item.id}','unit',this.value)" placeholder="0,00" style="width:75px;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);text-align:right"/>
@@ -1433,7 +1434,7 @@ function renderItensTable(){
         <input value="${item.unid}" oninput="updateItem(${item.id},'unid',this.value)" placeholder="un" style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);text-align:center"/>
       </td>
       <td style="padding:6px 8px;text-align:center">
-        <input type="text" inputmode="numeric" value="${item.qtde||1}" oninput="updateItem(${item.id},'qtde',this.value)" style="width:60px;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);text-align:center"/>
+        <input type="text" inputmode="numeric" value="${item.qtde||1}" oninput="updateItem(${item.id},'qtde',this.value)" onchange="updateItem(${item.id},'qtde',this.value)" style="width:60px;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);text-align:center"/>
       </td>
       <td style="padding:6px 8px;text-align:right">
         <input type="number" min="0" step="0.01" value="${item.unit||''}" onchange="updateItem(${item.id},'unit',this.value)" oninput="updateItem(${item.id},'unit',this.value)" placeholder="0,00" style="width:80px;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);text-align:right"/>
@@ -1593,8 +1594,6 @@ function openEditProposta(id){
   document.getElementById('pp-prob').value=p.prob||0;
   document.getElementById('pp-dataenvio').value=p.dataEnvio||'';
   document.getElementById('pp-dataevento').value=p.dataEvento||'';
-  document.getElementById('pp-datalimite').value=p.dataLimite||'';
-  document.getElementById('pp-datafech').value=p.dataFech||'';
   document.getElementById('pp-acao').value=p.acao||'';
   document.getElementById('pp-dataacao').value=p.dataAcao||'';
   document.getElementById('pp-obs').value=p.obs||'';
@@ -1624,14 +1623,28 @@ async function submitProposta(){
     status:document.getElementById('pp-status').value,prob:parseFloat(document.getElementById('pp-prob').value)||0,
     dataEnvio:document.getElementById('pp-dataenvio').value||null,
     dataEvento:document.getElementById('pp-dataevento').value||null,
-    dataLimite:document.getElementById('pp-datalimite').value||null,
-    dataFech:document.getElementById('pp-datafech').value||null,
     acao:document.getElementById('pp-acao').value.trim(),
     dataAcao:document.getElementById('pp-dataacao').value||null,
     obs:document.getElementById('pp-obs').value.trim(),
-    perda:document.getElementById('pp-perda').value.trim(),
+    perda:(document.getElementById('pp-perda')||{}).value||'',
     itens:[...propostaItens]
   };
+  const btn=document.querySelector('#form-proposta .btn-green');btn.textContent='Salvando...';btn.disabled=true;
+  try{
+    if(editPropostaId!==null){
+      const idx=PROPOSTAS.findIndex(x=>x.id===editPropostaId);
+      const sbObj2={cliente:d.cliente,emp:d.emp,tel:d.tel,email:d.email,produto:d.produto,valor:d.valor,resp:d.resp,origem:d.origem,status:d.status,prob:d.prob,data_envio:d.dataEnvio||null,data_evento:d.dataEvento||null,acao:d.acao,data_acao:d.dataAcao||null,obs:d.obs,perda:d.perda,itens:d.itens||[],desconto:d.desconto||0};
+      if(idx!==-1){const upd=await sbUpdate('propostas',editPropostaId,sbObj2);PROPOSTAS[idx]=mapProposta(upd[0]);}
+    } else {
+      const sbObj={cliente:d.cliente,emp:d.emp,tel:d.tel,email:d.email,produto:d.produto,valor:d.valor,resp:d.resp,origem:d.origem,status:d.status,prob:d.prob,data_envio:d.dataEnvio||null,data_evento:d.dataEvento||null,acao:d.acao,data_acao:d.dataAcao||null,obs:d.obs,perda:d.perda,itens:d.itens||[],desconto:d.desconto||0};
+      const novo=await sbInsert('propostas',sbObj);PROPOSTAS.push({...mapProposta(novo[0])});
+    }
+    renderPipeline();
+    const m=document.getElementById('form-proposta-msg');m.className='form-msg ok';m.textContent='✓ Proposta salva!';
+    setTimeout(closeAllForms,1400);
+  }catch(e){const m=document.getElementById('form-proposta-msg');m.className='form-msg err';m.textContent='Erro: '+e.message;}
+  btn.textContent='💾 Salvar';btn.disabled=false;
+}
   const btn=document.querySelector('#form-proposta .btn-green');btn.textContent='Salvando...';btn.disabled=true;
   try{
     if(editPropostaId!==null){
