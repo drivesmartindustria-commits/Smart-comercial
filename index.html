@@ -1648,22 +1648,6 @@ async function submitProposta(){
   }catch(e){const m=document.getElementById('form-proposta-msg');m.className='form-msg err';m.textContent='Erro: '+e.message;}
   btn.textContent='💾 Salvar';btn.disabled=false;
 }
-  const btn=document.querySelector('#form-proposta .btn-green');btn.textContent='Salvando...';btn.disabled=true;
-  try{
-    if(editPropostaId!==null){
-      const idx=PROPOSTAS.findIndex(x=>x.id===editPropostaId);
-      const sbObj2={cliente:d.cliente,emp:d.emp,tel:d.tel,email:d.email,produto:d.produto,valor:d.valor,resp:d.resp,origem:d.origem,status:d.status,prob:d.prob,data_envio:d.dataEnvio||null,data_evento:d.dataEvento||null,acao:d.acao,data_acao:d.dataAcao||null,obs:d.obs,perda:d.perda,itens:d.itens||[],desconto:d.desconto||0};
-      if(idx!==-1){const upd=await sbUpdate('propostas',editPropostaId,sbObj2);PROPOSTAS[idx]=mapProposta(upd[0]);}
-    } else {
-      const sbObj={cliente:d.cliente,emp:d.emp,tel:d.tel,email:d.email,produto:d.produto,valor:d.valor,resp:d.resp,origem:d.origem,status:d.status,prob:d.prob,data_envio:d.dataEnvio||null,data_evento:d.dataEvento||null,acao:d.acao,data_acao:d.dataAcao||null,obs:d.obs,perda:d.perda,itens:d.itens||[],desconto:d.desconto||0};
-      const novo=await sbInsert('propostas',sbObj);PROPOSTAS.push({...mapProposta(novo[0])});
-    }
-    renderPipeline();
-    const m=document.getElementById('form-proposta-msg');m.className='form-msg ok';m.textContent='✓ Proposta salva!';
-    setTimeout(closeAllForms,1400);
-  }catch(e){const m=document.getElementById('form-proposta-msg');m.className='form-msg err';m.textContent='Erro: '+e.message;}
-  btn.textContent='💾 Salvar';btn.disabled=false;
-}
 
 async function deleteProposta(id){
   if(!confirm('Excluir esta proposta?'))return;
