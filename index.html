@@ -276,10 +276,10 @@ tbody tr:hover td{background:var(--surface2)}
   </div>
   <div class="card">
     <div class="tab-row">
-      <button class="tab active" onclick="setTab('todos',this)">Todos</button>
+      <button class="tab active" onclick="setTab('aberto',this)">📋 Em Aberto</button>
+      <button class="tab" onclick="setTab('encerrado',this)">✅ Encerrados</button>
       <button class="tab" onclick="setTab('locacao',this)">Locações</button>
       <button class="tab" onclick="setTab('venda',this)">Vendas</button>
-      <button class="tab" onclick="setTab('pago',this)">Pagos</button>
       <button class="tab" onclick="setTab('pendente',this)">Pendentes</button>
       <button class="tab" onclick="setTab('nao',this)">Não Pagos</button>
     </div>
@@ -724,7 +724,7 @@ const getSem=d=>{if(!d)return '1º SEM-26';const m=parseInt(String(d).substr(5,2
 let DATA=[],CLIENTES=[],PRODUTOS=[],AGENDA=[],NOTAS=[];
 let chartTri,chartPgto,chartAnalise;
 let editPedidoId=null,editClienteId=null,editProdutoId=null,editAgendaId=null,editNotaId=null;
-let activeTab='todos',activePeriodo='Todos';
+let activeTab='aberto',activePeriodo='Todos';
 let calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
 
 // CLOCK
@@ -897,6 +897,8 @@ function renderTable(){
   renderFilters();
   const q=(document.getElementById('search-input')||{}).value?.toLowerCase()||'';
   let rows=DATA.filter(d=>{
+    if(activeTab==='aberto'&&d.statusPgto==='PAGO')return false;
+    if(activeTab==='encerrado'&&d.statusPgto!=='PAGO')return false;
     if(activeTab==='locacao'&&d.tipo!=='Locação')return false;
     if(activeTab==='venda'&&d.tipo!=='Venda')return false;
     if(activeTab==='pago'&&d.statusPgto!=='PAGO')return false;
@@ -946,9 +948,9 @@ function renderTable(){
       : `${g.itens.length} produtos`;
 
     // Linha principal do grupo
-    const linhaMestre=`<tr style="cursor:${temMaisDeUmItem?'pointer':'default'}" onclick="${temMaisDeUmItem?`toggleGrupo('${grupoId}')`:''}" id="row-${grupoId}">
-      <td style="text-align:center;font-size:14px;color:var(--text3);width:32px">
-        ${temMaisDeUmItem?`<span id="arrow-${grupoId}" style="display:inline-block;transition:transform .2s">▶</span>`:''}
+    const linhaMestre=`<tr style="cursor:pointer" onclick="openViewPedido('${g.chave}')" id="row-${grupoId}">
+      <td style="text-align:center;font-size:14px;color:var(--text3);width:32px" onclick="event.stopPropagation()">
+        ${temMaisDeUmItem?`<span id="arrow-${grupoId}" style="display:inline-block;transition:transform .2s" onclick="toggleGrupo('${grupoId}');event.stopPropagation()">▶</span>`:''}
       </td>
       <td style="color:var(--text3);font-size:11px">${g.idPrincipal}</td>
       <td><span class="tag ${g.tipo==='Locação'?'tag-loc':'tag-vnd'}">${g.tipo}</span></td>
@@ -964,8 +966,7 @@ function renderTable(){
       <td><span class="tag ${g.statusPgto==='PAGO'?'tag-pago':g.statusPgto==='PENDENTE'?'tag-pend':'tag-nao'}">${g.statusPgto}</span></td>
       <td>${g.resp?`<span style="font-size:10px;padding:1px 7px;border-radius:10px;background:${rc(g.resp)}1A;color:${rc(g.resp)}">${g.resp}</span>`:'—'}</td>
       <td style="white-space:nowrap" onclick="event.stopPropagation()">
-        <button onclick="gerarPDFPedido(${g.idPrincipal})" style="background:none;border:1px solid #93C5FD;border-radius:5px;padding:2px 7px;cursor:pointer;font-size:10px;margin-right:3px;color:#2563EB" title="Gerar PDF">📄</button>
-        <button onclick="marcarPedidoPago(${JSON.stringify(g.ids).replace(/"/g,'&quot;')})" style="background:none;border:1px solid #86EFAC;border-radius:5px;padding:2px 7px;cursor:pointer;font-size:10px;margin-right:3px;color:#15803D" title="Marcar como Pago">✅</button>
+        <button onclick="gerarPDFPedido(${g.idPrincipal})" style="background:#EFF6FF;border:1px solid #93C5FD;border-radius:5px;padding:3px 9px;cursor:pointer;font-size:11px;margin-right:3px;color:#1D4ED8;font-weight:600" title="Gerar PDF">📄 PDF</button>
         <button onclick="openEditPedido(${g.idPrincipal})" style="background:none;border:1px solid var(--border2);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:10px;margin-right:3px">✏️</button>
         <button onclick="deleteGrupo(${JSON.stringify(g.ids).replace(/"/g,'&quot;')})" style="background:none;border:1px solid #FCA5A5;border-radius:5px;padding:2px 7px;cursor:pointer;font-size:10px;color:var(--red)">🗑️</button>
       </td>
@@ -2163,8 +2164,108 @@ function gerarPDFPedido(id){
 }
 
 // MARCAR PEDIDO COMO PAGO
+function showConfirm(msg,onOk){
+  const modal=document.getElementById('modal-confirm');
+  document.getElementById('confirm-msg').textContent=msg;
+  modal.style.display='flex';
+  const ok=document.getElementById('confirm-ok');
+  const cancel=document.getElementById('confirm-cancel');
+  const cleanup=()=>{modal.style.display='none';ok.onclick=null;cancel.onclick=null;};
+  ok.onclick=()=>{cleanup();onOk();};
+  cancel.onclick=cleanup;
+}
+
+function openViewPedido(chave){
+  // Encontra o grupo correspondente pela chave
+  const partes=chave.split('||');
+  const [cliente,evento,dataPedido,tipo,resp,statusPgto]=partes;
+  const itens=DATA.filter(d=>
+    d.cliente===cliente&&d.evento===evento&&d.dataPedido===dataPedido&&
+    d.tipo===tipo&&d.resp===resp&&d.statusPgto===statusPgto
+  );
+  if(!itens.length)return;
+  const g=itens[0];
+  const pctImp=(g.das||4)+(g.icms||0)+(g.iss||0);
+  const totalBruto=itens.reduce((s,x)=>s+(x.total||0),0);
+  const impVal=totalBruto*(pctImp/100);
+  const liq=totalBruto-impVal;
+  const ids=itens.map(x=>x.id);
+  const isPago=statusPgto==='PAGO';
+
+  const linhasItens=itens.map((it,i)=>`
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:7px 8px;font-size:11px;color:var(--text3)">${String(i+1).padStart(2,'0')}</td>
+      <td style="padding:7px 8px;font-weight:500">${it.produto||'—'}</td>
+      <td style="padding:7px 8px;color:var(--text2)">${it.desc||'—'}</td>
+      <td style="padding:7px 8px;text-align:center">${it.qtde}</td>
+      <td style="padding:7px 8px;text-align:right">${fmt(it.unitario)}</td>
+      <td style="padding:7px 8px;text-align:right;font-weight:600">${fmt(it.total)}</td>
+    </tr>`).join('');
+
+  document.getElementById('view-pedido-content').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:12px">
+      <div><span style="color:var(--text3);font-size:10px;text-transform:uppercase">Cliente</span><div style="font-weight:600;margin-top:2px">${cliente}</div></div>
+      <div><span style="color:var(--text3);font-size:10px;text-transform:uppercase">Evento</span><div style="font-weight:500;margin-top:2px">${evento||'—'}</div></div>
+      <div><span style="color:var(--text3);font-size:10px;text-transform:uppercase">Tipo</span><div style="margin-top:2px"><span class="tag ${tipo==='Locação'?'tag-loc':'tag-vnd'}">${tipo}</span></div></div>
+      <div><span style="color:var(--text3);font-size:10px;text-transform:uppercase">Responsável</span><div style="font-weight:500;margin-top:2px">${resp||'—'}</div></div>
+      <div><span style="color:var(--text3);font-size:10px;text-transform:uppercase">Data Pedido</span><div style="margin-top:2px">${fmtD(dataPedido)}</div></div>
+      <div><span style="color:var(--text3);font-size:10px;text-transform:uppercase">Montagem</span><div style="margin-top:2px">${fmtD(g.montagem)||'—'}</div></div>
+      <div><span style="color:var(--text3);font-size:10px;text-transform:uppercase">Vencimento</span><div style="margin-top:2px">${fmtD(g.dataPgto)||'—'}</div></div>
+      <div><span style="color:var(--text3);font-size:10px;text-transform:uppercase">Status</span><div style="margin-top:2px"><span class="tag ${isPago?'tag-pago':statusPgto==='PENDENTE'?'tag-pend':'tag-nao'}">${statusPgto}</span></div></div>
+    </div>
+    <div style="background:var(--surface2);border-radius:8px;overflow:hidden;margin-bottom:14px">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:var(--border);font-size:10px;text-transform:uppercase;color:var(--text3)">
+          <th style="padding:7px 8px;text-align:left">#</th>
+          <th style="padding:7px 8px;text-align:left">Produto</th>
+          <th style="padding:7px 8px;text-align:left">Desc.</th>
+          <th style="padding:7px 8px;text-align:center">Qtde</th>
+          <th style="padding:7px 8px;text-align:right">Unit.</th>
+          <th style="padding:7px 8px;text-align:right">Total</th>
+        </tr></thead>
+        <tbody>${linhasItens}</tbody>
+      </table>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:13px">
+      <div>Total Bruto: <strong>${fmt(totalBruto)}</strong></div>
+      <div style="color:var(--red)">Impostos (${pctImp}%): − ${fmt(impVal)}</div>
+      <div style="font-size:16px;font-weight:700;color:var(--green)">Líquido: ${fmt(liq)}</div>
+    </div>
+    ${g.obs?`<div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:6px;font-size:12px;color:var(--text2)">📝 ${g.obs}</div>`:''}
+  `;
+
+  const actionsEl=document.getElementById('view-pedido-actions');
+  actionsEl.innerHTML='';
+
+  const btnPDF=document.createElement('button');
+  btnPDF.className='btn-outline';
+  btnPDF.innerHTML='📄 Gerar PDF';
+  btnPDF.onclick=()=>gerarPDFPedido(Math.min(...ids));
+  actionsEl.appendChild(btnPDF);
+
+  const btnEdit=document.createElement('button');
+  btnEdit.className='btn-outline';
+  btnEdit.innerHTML='✏️ Editar';
+  btnEdit.onclick=()=>{document.getElementById('modal-view-pedido').classList.remove('open');openEditPedido(Math.min(...ids));};
+  actionsEl.appendChild(btnEdit);
+
+  if(!isPago){
+    const btnPago=document.createElement('button');
+    btnPago.className='btn btn-green';
+    btnPago.innerHTML='✅ Marcar como Pago';
+    btnPago.onclick=()=>{
+      showConfirm('Confirmar pagamento deste pedido?',async()=>{
+        await marcarPedidoPago(ids);
+        document.getElementById('modal-view-pedido').classList.remove('open');
+      });
+    };
+    actionsEl.appendChild(btnPago);
+  }
+
+  document.getElementById('modal-view-pedido').classList.add('open');
+}
+
 async function marcarPedidoPago(ids){
-  if(!confirm('Marcar pedido como PAGO?'))return;
   try{
     for(const id of ids){
       await sbUpdate('pedidos',id,{status_pgto:'PAGO',data_pgto:new Date().toISOString().split('T')[0]});
@@ -2197,6 +2298,30 @@ function showPane(id){
 // LOGIN
 window.addEventListener('load',()=>{document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('login-pwd').focus();});
 function doLogin(){if(document.getElementById('login-pwd').value===SENHA){document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='grid';startClock();loadData();}else{document.getElementById('login-err').style.display='block';document.getElementById('login-pwd').value='';}}
+
 </script>
+
+<!-- MODAL VISUALIZAR PEDIDO -->
+<div class="form-overlay" id="modal-view-pedido" style="z-index:1100">
+  <div class="form-card" style="max-width:620px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="form-title" style="margin-bottom:0">📋 Pedido</div>
+      <button onclick="document.getElementById('modal-view-pedido').classList.remove('open')" style="background:none;border:1px solid var(--border2);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px;color:var(--text2)">✕ Fechar</button>
+    </div>
+    <div id="view-pedido-content"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap" id="view-pedido-actions"></div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAÇÃO -->
+<div id="modal-confirm" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1200;display:none;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 28px 20px;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.3)">
+    <div id="confirm-msg" style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:20px;line-height:1.4"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button id="confirm-cancel" style="padding:8px 20px;border-radius:7px;border:1px solid var(--border2);background:none;cursor:pointer;font-size:13px;color:var(--text2)">Cancelar</button>
+      <button id="confirm-ok" style="padding:8px 20px;border-radius:7px;border:none;background:#15803D;color:#fff;cursor:pointer;font-size:13px;font-weight:600">Confirmar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
