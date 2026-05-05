@@ -330,7 +330,7 @@ tbody tr:hover td{background:var(--surface2)}
   </div>
   <div class="card">
     <div class="table-wrap">
-      <table><thead><tr><th>#</th><th>Cliente</th><th>Tipo</th><th>Evento</th><th style="text-align:right">Valor</th><th>Vencimento</th><th style="text-align:right">Recebido</th><th>Status</th><th>Resp.</th></tr></thead><tbody id="tbody-rec"></tbody></table>
+      <table><thead><tr><th>#</th><th>Cliente</th><th>Tipo</th><th>Evento</th><th style="text-align:right">Valor</th><th>Vencimento</th><th style="text-align:right">Recebido</th><th>Status</th><th>Resp.</th><th>Ação</th></tr></thead><tbody id="tbody-rec"></tbody></table>
     </div>
   </div>
 </div>
@@ -1045,6 +1045,12 @@ function renderRecebimentos(){
     <td class="val-cell" style="text-align:right;color:var(--green)">${d.statusPgto==='PAGO'?fmt(d.total):'R$ 0,00'}</td>
     <td><span class="tag ${d.statusPgto==='PAGO'?'tag-pago':d.statusPgto==='PENDENTE'?'tag-pend':'tag-nao'}">${d.statusPgto}</span></td>
     <td>${d.resp?`<span style="font-size:10px;padding:1px 7px;border-radius:10px;background:${rc(d.resp)}1A;color:${rc(d.resp)}">${d.resp}</span>`:'—'}</td>
+    <td>
+      ${d.statusPgto==='PAGO'
+        ?`<button onclick="reverterPendente(${d.id})" style="background:#FFF7ED;border:1px solid #FCD34D;border-radius:5px;padding:3px 9px;cursor:pointer;font-size:11px;color:#B45309;font-weight:600" title="Reverter para Pendente">↩ Pendente</button>`
+        :`<button onclick="marcarPago1(${d.id})" style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:5px;padding:3px 9px;cursor:pointer;font-size:11px;color:#15803D;font-weight:600" title="Marcar como Pago">✅ Pago</button>`
+      }
+    </td>
   </tr>`).join('');
 }
 
@@ -2265,7 +2271,21 @@ function openViewPedido(chave){
   document.getElementById('modal-view-pedido').classList.add('open');
 }
 
-async function marcarPedidoPago(ids){
+async function reverterPendente(id){
+  showConfirm('Reverter este pedido para PENDENTE?',async()=>{
+    try{
+      await sbUpdate('pedidos',id,{status_pgto:'PENDENTE'});
+      const idx=DATA.findIndex(x=>x.id===id);
+      if(idx!==-1)DATA[idx].statusPgto='PENDENTE';
+      buildDashboard();
+    }catch(e){alert('Erro: '+e.message);}
+  });
+}
+async function marcarPago1(id){
+  showConfirm('Marcar este item como PAGO?',async()=>{
+    await marcarPedidoPago([id]);
+  });
+}
   try{
     for(const id of ids){
       await sbUpdate('pedidos',id,{status_pgto:'PAGO',data_pgto:new Date().toISOString().split('T')[0]});
@@ -2302,8 +2322,8 @@ function doLogin(){if(document.getElementById('login-pwd').value===SENHA){docume
 </script>
 
 <!-- MODAL VISUALIZAR PEDIDO -->
-<div class="form-overlay" id="modal-view-pedido" style="z-index:1100">
-  <div class="form-card" style="max-width:620px">
+<div class="form-overlay" id="modal-view-pedido" style="z-index:1100" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="form-card" style="max-width:620px;background:var(--surface);border-radius:12px;padding:24px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div class="form-title" style="margin-bottom:0">📋 Pedido</div>
       <button onclick="document.getElementById('modal-view-pedido').classList.remove('open')" style="background:none;border:1px solid var(--border2);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px;color:var(--text2)">✕ Fechar</button>
