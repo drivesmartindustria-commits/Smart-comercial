@@ -1209,6 +1209,26 @@ async function deleteNota(id){
 // ── ITENS DO PEDIDO ──────────────────────────────────────────────────────────
 let pedidoItens=[];
 
+function qtdChange(itemId, tipo, sel){
+  if(sel.value==='outro'){
+    // Troca o select por input livre
+    const td=document.getElementById('td-qtd-'+itemId);
+    if(!td)return;
+    const inp=document.createElement('input');
+    inp.type='number';inp.min='1';inp.max='1000';inp.value='91';
+    inp.style.cssText='width:60px;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:\'DM Mono\',monospace;color:var(--text);padding:3px 4px;text-align:center';
+    inp.oninput=function(){
+      if(tipo==='pedido') updateItemPedido(itemId,'qtde',this.value);
+      else updateItem(itemId,'qtde',this.value);
+    };
+    td.innerHTML='';
+    td.appendChild(inp);
+    inp.focus();
+  } else {
+    if(tipo==='pedido') updateItemPedido(itemId,'qtde',sel.value);
+    else updateItem(itemId,'qtde',sel.value);
+  }
+}
 function selecionarProdutoSelect(itemId, tipo, val){
   const p = PRODUTOS.find(x=>(x.cod||x.desc)===val || x.cod===val || x.desc===val);
   if(!p) return;
@@ -1300,10 +1320,14 @@ function renderItensPedido(){
       <td style="padding:6px 8px">
         <input value="${item.desc}" id="f-item-desc-${item.id}" oninput="updateItemPedido('${item.id}','desc',this.value)" placeholder="Descrição..." style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text)"/>
       </td>
-      <td style="padding:4px 6px;text-align:center">
-        <select onchange="updateItemPedido('${item.id}','qtde',this.value)" style="width:60px;background:transparent;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);padding:3px 2px;text-align:center;cursor:pointer">
-          ${Array.from({length:99},(_,i)=>`<option value="${i+1}" ${item.qtde==i+1?'selected':''}>${i+1}</option>`).join('')}
-        </select>
+      <td style="padding:4px 6px;text-align:center" id="td-qtd-${item.id}">
+        ${item.qtde>90
+          ? `<input type="number" min="1" max="1000" value="${item.qtde||1}" oninput="updateItemPedido('${item.id}','qtde',this.value)" style="width:60px;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);padding:3px 4px;text-align:center"/>`
+          : `<select onchange="qtdChange('${item.id}','pedido',this)" style="width:60px;background:transparent;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);padding:3px 2px;text-align:center;cursor:pointer">
+              ${Array.from({length:90},(_,i)=>`<option value="${i+1}" ${item.qtde==i+1?'selected':''}>${i+1}</option>`).join('')}
+              <option value="outro">Outro...</option>
+            </select>`
+        }
       </td>
       <td style="padding:6px 8px;text-align:right">
         <input type="number" min="0" step="0.01" value="${item.unit||''}" id="f-item-unit-${item.id}" onchange="updateItemPedido('${item.id}','unit',this.value)" oninput="updateItemPedido('${item.id}','unit',this.value)" placeholder="0,00" style="width:75px;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);text-align:right"/>
@@ -1445,10 +1469,14 @@ function renderItensTable(){
       <td style="padding:6px 8px">
         <input value="${item.unid}" oninput="updateItem(${item.id},'unid',this.value)" placeholder="un" style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);text-align:center"/>
       </td>
-      <td style="padding:4px 6px;text-align:center">
-        <select onchange="updateItem(${item.id},'qtde',this.value)" style="width:60px;background:transparent;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);padding:3px 2px;text-align:center;cursor:pointer">
-          ${Array.from({length:99},(_,i)=>`<option value="${i+1}" ${item.qtde==i+1?'selected':''}>${i+1}</option>`).join('')}
-        </select>
+      <td style="padding:4px 6px;text-align:center" id="td-qtd-${item.id}">
+        ${item.qtde>90
+          ? `<input type="number" min="1" max="1000" value="${item.qtde||1}" oninput="updateItem(${item.id},'qtde',this.value)" style="width:60px;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);padding:3px 4px;text-align:center"/>`
+          : `<select onchange="qtdChange(${item.id},'proposta',this)" style="width:60px;background:transparent;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);padding:3px 2px;text-align:center;cursor:pointer">
+              ${Array.from({length:90},(_,i)=>`<option value="${i+1}" ${item.qtde==i+1?'selected':''}>${i+1}</option>`).join('')}
+              <option value="outro">Outro...</option>
+            </select>`
+        }
       </td>
       <td style="padding:6px 8px;text-align:right">
         <input type="number" min="0" step="0.01" value="${item.unit||''}" onchange="updateItem(${item.id},'unit',this.value)" oninput="updateItem(${item.id},'unit',this.value)" placeholder="0,00" style="width:80px;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Mono',monospace;color:var(--text);text-align:right"/>
