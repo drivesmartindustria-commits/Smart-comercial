@@ -1209,46 +1209,23 @@ async function deleteNota(id){
 // ── ITENS DO PEDIDO ──────────────────────────────────────────────────────────
 let pedidoItens=[];
 
-function buscarProduto(itemId, tipo, query){
-  const drop = document.getElementById('drop-'+itemId);
-  if(!drop) return;
-  const q = (query||'').toLowerCase().trim();
-  const lista = q === ''
-    ? PRODUTOS.slice(0, 20)
-    : PRODUTOS.filter(p =>
-        (p.cod||'').toLowerCase().includes(q) ||
-        (p.desc||'').toLowerCase().includes(q)
-      ).slice(0, 20);
-  drop.innerHTML = '';
-  if(lista.length === 0){
-    const msg = document.createElement('div');
-    msg.style.cssText = 'padding:10px 12px;font-size:12px;color:#94a3b8';
-    msg.textContent = PRODUTOS.length === 0 ? 'Carregando produtos...' : 'Nenhum produto encontrado';
-    drop.appendChild(msg);
-    drop.style.display = 'block';
-    return;
+function selecionarProdutoSelect(itemId, tipo, val){
+  const p = PRODUTOS.find(x=>(x.cod||x.desc)===val || x.cod===val || x.desc===val);
+  if(!p) return;
+  if(tipo==='pedido'){
+    const item=pedidoItens.find(x=>x.id===itemId);
+    if(item){item.produto=p.cod||p.desc;item.desc=p.desc;item.unit=p.preco||0;item.total=(item.qtde||1)*(p.preco||0);}
+    renderItensPedido();
+  } else {
+    const item=propostaItens.find(x=>x.id==itemId);
+    if(item){item.produto=p.cod||p.desc;item.unid=p.unid||'un';item.unit=p.preco||0;item.total=(item.qtde||1)*(p.preco||0);}
+    renderItensTable();
   }
-  lista.forEach(function(p){
-    const row = document.createElement('div');
-    row.style.cssText = 'padding:9px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;gap:8px';
-    const left = document.createElement('span');
-    left.textContent = (p.cod ? p.cod + ' · ' : '') + (p.desc || '—');
-    const right = document.createElement('span');
-    right.style.cssText = 'font-size:11px;color:#16a34a;white-space:nowrap;font-weight:600';
-    right.textContent = 'R$ ' + (p.preco||0).toLocaleString('pt-BR', {minimumFractionDigits:2});
-    row.appendChild(left);
-    row.appendChild(right);
-    row.addEventListener('mouseover', function(){ row.style.background='#f8fafc'; });
-    row.addEventListener('mouseout', function(){ row.style.background=''; });
-    row.addEventListener('mousedown', function(e){
-      e.preventDefault();
-      selecionarProduto(itemId, tipo, p.cod||'', p.desc||'', p.preco||0, p.unid||'un');
-    });
-    drop.appendChild(row);
-  });
-  drop.style.display = 'block';
 }
-function filtrarProduto(itemId, tipo, query){ buscarProduto(itemId, tipo, query); }
+function buscarProduto(){}
+function filtrarProduto(){}
+function fecharDropdown(){}
+function selecionarProduto(){}
 
 function fecharDropdown(itemId){
   const drop=document.getElementById('drop-'+itemId);
@@ -1314,9 +1291,11 @@ function renderItensPedido(){
   }
   tbody.innerHTML=pedidoItens.map(item=>`
     <tr style="border-top:1px solid var(--border)">
-      <td style="padding:6px 8px;position:relative">
-        <input value="${item.produto}" oninput="buscarProduto('${item.id}','pedido',this.value)" onfocus="buscarProduto('${item.id}','pedido',this.value)" onblur="setTimeout(()=>fecharDropdown('${item.id}'),200)" id="f-item-prod-${item.id}" placeholder="Código ou descrição..." autocomplete="off" style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text)"/>
-        <div id="drop-${item.id}" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:9999;max-height:200px;overflow-y:auto"></div>
+      <td style="padding:4px 6px">
+        <select id="f-item-prod-${item.id}" onchange="selecionarProdutoSelect('${item.id}','pedido',this.value)" style="width:100%;background:transparent;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);padding:3px 4px;cursor:pointer">
+          <option value="">-- selecione --</option>
+          ${PRODUTOS.map(p=>`<option value="${p.cod||p.desc}" ${(item.produto===p.cod||item.produto===p.desc)?'selected':''}>${p.cod?p.cod+' – ':''} ${p.desc} (R$ ${(p.preco||0).toLocaleString('pt-BR',{minimumFractionDigits:2})})</option>`).join('')}
+        </select>
       </td>
       <td style="padding:6px 8px">
         <input value="${item.desc}" id="f-item-desc-${item.id}" oninput="updateItemPedido('${item.id}','desc',this.value)" placeholder="Descrição..." style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text)"/>
@@ -1455,9 +1434,11 @@ function renderItensTable(){
   }
   tbody.innerHTML=propostaItens.map(item=>`
     <tr style="border-top:1px solid var(--border)">
-      <td style="padding:6px 8px;position:relative">
-        <input value="${item.produto}" oninput="buscarProduto(${item.id},'proposta',this.value)" onfocus="buscarProduto(${item.id},'proposta',this.value)" onblur="setTimeout(()=>fecharDropdown(${item.id}),200)" id="pp-item-prod-${item.id}" placeholder="Código ou descrição..." autocomplete="off" style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text)"/>
-        <div id="drop-${item.id}" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:9999;max-height:200px;overflow-y:auto"></div>
+      <td style="padding:4px 6px">
+        <select id="pp-item-prod-${item.id}" onchange="selecionarProdutoSelect(${item.id},'proposta',this.value)" style="width:100%;background:transparent;border:1px solid var(--border2);border-radius:4px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);padding:3px 4px;cursor:pointer">
+          <option value="">-- selecione --</option>
+          ${PRODUTOS.map(p=>`<option value="${p.cod||p.desc}" ${(item.produto===p.cod||item.produto===p.desc)?'selected':''}>${p.cod?p.cod+' – ':''} ${p.desc} (R$ ${(p.preco||0).toLocaleString('pt-BR',{minimumFractionDigits:2})})</option>`).join('')}
+        </select>
       </td>
       <td style="padding:6px 8px">
         <input value="${item.unid}" oninput="updateItem(${item.id},'unid',this.value)" placeholder="un" style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);text-align:center"/>
