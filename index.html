@@ -1730,7 +1730,7 @@ async function fecharNegocio(id){
     resp:p.resp||'',
     das:4,icms:0,iss:0
   };
-  const sbPedido={tipo:novoPedido.tipo,tri:novoPedido.tri,cliente:novoPedido.cliente,evento:novoPedido.evento,uf:novoPedido.uf,produto:novoPedido.produto,descricao:novoPedido.desc||'',qtde:novoPedido.qtde,unitario:novoPedido.unitario,total:novoPedido.total,data_pedido:novoPedido.dataPedido,montagem:novoPedido.montagem||null,prazo_pgto:'',data_pgto:novoPedido.dataPgto||null,status_pgto:novoPedido.statusPgto,obs:novoPedido.obs,resp:novoPedido.resp||'',das:4,icms:0,iss:0};
+  const sbPedido={tipo:novoPedido.tipo,tri:novoPedido.tri,cliente:novoPedido.cliente,evento:novoPedido.evento,local:p.local||'',uf:novoPedido.uf,produto:novoPedido.produto,descricao:novoPedido.desc||'',qtde:novoPedido.qtde,unitario:novoPedido.unitario,total:novoPedido.total,data_pedido:novoPedido.dataPedido,montagem:novoPedido.montagem||null,prazo_pgto:'',data_pgto:novoPedido.dataPgto||null,status_pgto:novoPedido.statusPgto,obs:novoPedido.obs,resp:novoPedido.resp||'',das:4,icms:0,iss:0};
   const novoDB=await sbInsert('pedidos',sbPedido);
   DATA.push(mapPedido(novoDB[0]));
 
@@ -2310,6 +2310,7 @@ function openViewPedido(chave){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:12px">
       <div><span style="color:var(--text3);font-size:10px;text-transform:uppercase">Cliente</span><div style="font-weight:600;margin-top:2px">${cliente}</div></div>
       <div><span style="color:var(--text3);font-size:10px;text-transform:uppercase">Evento</span><div style="font-weight:500;margin-top:2px">${evento||'—'}</div></div>
+      <div><span style="color:var(--text3);font-size:10px;text-transform:uppercase">Local</span><div style="font-weight:500;margin-top:2px">${g.local||'—'}</div></div>
       <div><span style="color:var(--text3);font-size:10px;text-transform:uppercase">Tipo</span><div style="margin-top:2px"><span class="tag ${tipo==='Locação'?'tag-loc':'tag-vnd'}">${tipo}</span></div></div>
       <div><span style="color:var(--text3);font-size:10px;text-transform:uppercase">Responsável</span><div style="font-weight:500;margin-top:2px">${resp||'—'}</div></div>
       <div><span style="color:var(--text3);font-size:10px;text-transform:uppercase">Data Pedido</span><div style="margin-top:2px">${fmtD(dataPedido)}</div></div>
