@@ -1594,6 +1594,7 @@ function renderPipeline(){
         ${p.dataEnvio?`<span>📤 Envio: ${fmtD(p.dataEnvio)}</span>`:''}
         ${p.dataEvento?`<span>🎪 Evento: ${fmtD(p.dataEvento)}</span>`:''}
         ${p.local?`<span>📍 ${p.local}</span>`:''}
+        <span style="font-weight:700;color:var(--text);font-family:'DM Mono',monospace">💰 ${fmt(p.valor)}</span>
         ${p.dataLimite?`<span>⏰ Limite: ${fmtD(p.dataLimite)}</span>`:''}
         ${p.dataFech?`<span>🎯 Fech. est.: ${fmtD(p.dataFech)}</span>`:''}
       </div>
