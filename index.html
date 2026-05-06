@@ -244,7 +244,20 @@ tbody tr:hover td{background:var(--surface2)}
       <div class="card"><div class="card-title">Top Produtos</div><div class="card-sub">Por valor total</div><div id="top-produtos" style="margin-top:10px"></div></div>
       <div class="card"><div class="card-title">Resumo Financeiro</div><div class="card-sub">Posição atual</div><div id="resumo-fin" style="margin-top:10px"></div></div>
     </div>
-    <div class="card section"><div class="card-title">⚠️ Próximos Vencimentos (30 dias)</div><div class="card-sub">Pagamentos a receber</div><div id="vencimentos" style="margin-top:10px"></div></div>
+    <div class="card section">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <div class="card-title">⚠️ Próximos Vencimentos (30 dias)</div>
+          <div class="card-sub">Pagamentos a receber</div>
+          <div id="vencimentos" style="margin-top:10px"></div>
+        </div>
+        <div>
+          <div class="card-title" style="color:#B91C1C">🔴 Vencidos</div>
+          <div class="card-sub">Precisam ser cobrados</div>
+          <div id="vencidos" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -864,8 +877,20 @@ function buildDashboard(){
   ].map(([l,v,s])=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid var(--border);font-size:12px"><span style="color:var(--text2)">${l}</span><span style="font-family:'DM Mono',monospace;font-weight:500;${s}">${v}</span></div>`).join('');
 
   const today=new Date();const in30=new Date();in30.setDate(in30.getDate()+30);
-  const venc=DATA.filter(d=>{if(d.statusPgto==='PAGO'||!d.dataPgto)return false;const dt=new Date(d.dataPgto);return dt>=today&&dt<=in30;}).sort((a,b)=>a.dataPgto.localeCompare(b.dataPgto));
-  document.getElementById('vencimentos').innerHTML=venc.length===0?'<div style="text-align:center;padding:14px;color:var(--text3);font-size:12px">Nenhum vencimento nos próximos 30 dias.</div>':`<div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Tipo</th><th style="text-align:right">Valor</th><th>Vencimento</th><th>Status</th></tr></thead><tbody>${venc.map(d=>`<tr><td style="font-weight:500">${d.cliente}</td><td><span class="tag ${d.tipo==='Locação'?'tag-loc':'tag-vnd'}">${d.tipo}</span></td><td class="val-cell" style="text-align:right">${fmt(d.total)}</td><td style="font-size:11px">${fmtD(d.dataPgto)}</td><td><span class="tag ${d.statusPgto==='PENDENTE'?'tag-pend':'tag-nao'}">${d.statusPgto}</span></td></tr>`).join('')}</tbody></table></div>`;
+
+  // Próximos vencimentos (hoje → 30 dias)
+  const venc=DATA.filter(d=>{if(d.statusPgto==='PAGO'||!d.dataPgto)return false;const dt=new Date(d.dataPgto+'T00:00:00');return dt>=today&&dt<=in30;}).sort((a,b)=>a.dataPgto.localeCompare(b.dataPgto));
+  const vencRow=d=>`<tr><td style="font-weight:500;font-size:12px">${d.cliente}</td><td><span class="tag ${d.tipo==='Locação'?'tag-loc':'tag-vnd'}">${d.tipo}</span></td><td class="val-cell" style="text-align:right">${fmt(d.total)}</td><td style="font-size:11px">${fmtD(d.dataPgto)}</td></tr>`;
+  document.getElementById('vencimentos').innerHTML=venc.length===0
+    ?'<div style="text-align:center;padding:14px;color:var(--text3);font-size:12px">Nenhum vencimento nos próximos 30 dias.</div>'
+    :`<div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Tipo</th><th style="text-align:right">Valor</th><th>Vencimento</th></tr></thead><tbody>${venc.map(vencRow).join('')}</tbody></table></div>`;
+
+  // Vencidos (antes de hoje, não pagos)
+  const vencidos=DATA.filter(d=>{if(d.statusPgto==='PAGO'||!d.dataPgto)return false;const dt=new Date(d.dataPgto+'T00:00:00');return dt<today;}).sort((a,b)=>a.dataPgto.localeCompare(b.dataPgto));
+  const totalVencido=vencidos.reduce((s,d)=>s+d.total,0);
+  document.getElementById('vencidos').innerHTML=vencidos.length===0
+    ?'<div style="text-align:center;padding:14px;color:var(--text3);font-size:12px">Nenhum pagamento vencido. ✅</div>'
+    :`<div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:6px;padding:6px 12px;margin-bottom:8px;font-size:12px;font-weight:600;color:#B91C1C">Total vencido: ${fmt(totalVencido)}</div><div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Tipo</th><th style="text-align:right">Valor</th><th>Venceu em</th></tr></thead><tbody>${vencidos.map(d=>`<tr><td style="font-weight:500;font-size:12px;color:#B91C1C">${d.cliente}</td><td><span class="tag ${d.tipo==='Locação'?'tag-loc':'tag-vnd'}">${d.tipo}</span></td><td class="val-cell" style="text-align:right;color:#B91C1C">${fmt(d.total)}</td><td style="font-size:11px;color:#B91C1C;font-weight:600">${fmtD(d.dataPgto)}</td></tr>`).join('')}</tbody></table></div>`;
 
   renderTable();renderRecebimentos();
 }
