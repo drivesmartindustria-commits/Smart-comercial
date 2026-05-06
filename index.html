@@ -432,7 +432,11 @@ tbody tr:hover td{background:var(--surface2)}
       <div class="form-group"><label class="form-label">Cliente *</label><input class="form-input" id="f-cliente" type="text" list="clientes-list" placeholder="Selecione ou digite..."/><datalist id="clientes-list"></datalist></div>
       <div class="form-group"><label class="form-label">Evento</label><input class="form-input" id="f-evento" type="text" placeholder="Nome do evento"/></div>
     </div>
-    <div class="form-group"><label class="form-label">UF</label><select class="form-select" id="f-uf" style="max-width:120px"><option>SP</option><option>RJ</option><option>MG</option><option>RS</option><option>PR</option><option>SC</option><option>BA</option><option>GO</option><option>DF</option><option>Outro</option></select></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Local</label><input class="form-input" id="f-local" type="text" placeholder="Ex: Espaço Giardini, Anhembi..."/></div>
+    </div>
+      <div class="form-group"><label class="form-label">UF</label><select class="form-select" id="f-uf" style="max-width:120px"><option>SP</option><option>RJ</option><option>MG</option><option>RS</option><option>PR</option><option>SC</option><option>BA</option><option>GO</option><option>DF</option><option>Outro</option></select></div>
+    </div>
     <!-- ITENS DO PEDIDO -->
     <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">📦 Itens do Pedido *</div>
     <div style="border:1px solid var(--border2);border-radius:var(--radius-sm);overflow:hidden;margin-bottom:10px">
@@ -599,6 +603,7 @@ tbody tr:hover td{background:var(--surface2)}
       <div class="form-group"><label class="form-label">Evento</label><input class="form-input" id="pp-emp" type="text" placeholder="Ex: Casa Giardini"/></div>
     </div>
     <div class="form-row">
+      <div class="form-group"><label class="form-label">Local</label><input class="form-input" id="pp-local" type="text" placeholder="Ex: Espaço Giardini, Anhembi..."/></div>
       <div class="form-group"><label class="form-label">Telefone</label><input class="form-input" id="pp-tel" type="text" placeholder="(11) 99999-9999"/></div>
       <div class="form-group"><label class="form-label">E-mail</label><input class="form-input" id="pp-email" type="email" placeholder="email@empresa.com"/></div>
     </div>
@@ -1209,44 +1214,54 @@ function filtrarProduto(itemId, tipo, query){
   const drop=document.getElementById('drop-'+itemId);
   if(!drop)return;
   const q=(query||'').toLowerCase().trim();
-  const lista=q.length===0
-    ? PRODUTOS.slice(0,15)
-    : PRODUTOS.filter(p=>
-        (p.cod||'').toLowerCase().includes(q)||
-        (p.desc||'').toLowerCase().includes(q)
-      ).slice(0,15);
-  if(lista.length===0){drop.style.display='none';return;}
+  const lista=q===''
+    ? PRODUTOS.slice(0,20)
+    : PRODUTOS.filter(p=>(p.cod||'').toLowerCase().includes(q)||(p.desc||'').toLowerCase().includes(q)).slice(0,20);
   drop.style.display='block';
-  drop.innerHTML=lista.map(p=>`
-    <div onmousedown="selecionarProduto('${itemId}','${tipo}',${JSON.stringify(p.cod)},${JSON.stringify(p.desc)},${p.preco||0},${JSON.stringify(p.unid||'un')})"
-      style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"
-      onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
-      <span><strong style="color:var(--text)">${p.cod||'—'}</strong> <span style="color:var(--text2)">– ${p.desc}</span></span>
-      <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--green);white-space:nowrap;margin-left:8px">R$ ${(p.preco||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
-    </div>`).join('');
+  drop.innerHTML='';
+  if(lista.length===0){
+    drop.innerHTML='<div style="padding:10px 12px;font-size:12px;color:var(--text3)">Nenhum produto encontrado</div>';
+    return;
+  }
+  lista.forEach(p=>{
+    const btn=document.createElement('div');
+    btn.style.cssText='padding:9px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;gap:8px';
+    const label=document.createElement('span');
+    label.textContent=(p.cod?p.cod+' · ':'')+p.desc;
+    const price=document.createElement('span');
+    price.style.cssText='font-size:11px;color:#16a34a;white-space:nowrap;font-weight:600';
+    price.textContent='R$ '+(p.preco||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+    btn.appendChild(label);
+    btn.appendChild(price);
+    btn.addEventListener('mouseover',()=>btn.style.background='#f1f5f9');
+    btn.addEventListener('mouseout',()=>btn.style.background='');
+    btn.addEventListener('mousedown',()=>selecionarProduto(itemId,tipo,p.cod||'',p.desc||'',p.preco||0,p.unid||'un'));
+    drop.appendChild(btn);
+  });
 }
+
 function fecharDropdown(itemId){
   const drop=document.getElementById('drop-'+itemId);
   if(drop)drop.style.display='none';
 }
 function selecionarProduto(itemId, tipo, cod, desc, preco, unid){
   fecharDropdown(itemId);
-  const inp=document.getElementById((tipo==='pedido'?'f':'pp')+'-item-prod-'+itemId);
-  if(inp)inp.value=cod;
+  const prefix=tipo==='pedido'?'f':'pp';
+  const inp=document.getElementById(prefix+'-item-prod-'+itemId);
+  if(inp)inp.value=cod||desc;
   if(tipo==='pedido'){
     const item=pedidoItens.find(x=>x.id===itemId);
-    if(item){item.produto=cod;item.desc=desc;item.unit=preco;item.total=(item.qtde||1)*preco;}
+    if(item){item.produto=cod||desc;item.desc=desc;item.unit=preco;item.total=(item.qtde||1)*preco;}
     const descEl=document.getElementById('f-item-desc-'+itemId);
     const unitEl=document.getElementById('f-item-unit-'+itemId);
     if(descEl)descEl.value=desc;
-    if(unitEl)unitEl.value=preco;
+    if(unitEl)unitEl.value=preco||'';
     renderItensPedido();
   } else {
     const item=propostaItens.find(x=>x.id==itemId);
-    if(item){item.produto=cod;item.unid=unid;item.unit=preco;item.total=(item.qtde||1)*preco;}
-    const unidEl=document.querySelector(`#pp-item-prod-${itemId}`)?.closest('tr')?.querySelector('input[placeholder="un"]');
-    if(unidEl)unidEl.value=unid;
+    if(item){item.produto=cod||desc;item.unid=unid;item.unit=preco;item.total=(item.qtde||1)*preco;}
     renderItensTable();
+    setTimeout(()=>{const row=document.getElementById('pp-item-prod-'+itemId)?.closest('tr');if(row){const u=row.querySelectorAll('input')[1];if(u)u.value=unid;}},30);
   }
 }
 function addItemPedido(item=null){
@@ -1590,6 +1605,7 @@ function openEditProposta(id){
   editPropostaId=id;
   document.getElementById('pp-cliente').value=p.cliente||'';
   document.getElementById('pp-emp').value=p.emp||'';
+  document.getElementById('pp-local').value=p.local||'';
   document.getElementById('pp-tel').value=p.tel||'';
   document.getElementById('pp-email').value=p.email||'';
   document.getElementById('pp-resp').value=p.resp||'';
@@ -1621,6 +1637,7 @@ async function submitProposta(){
   if(!cliente){const m=document.getElementById('form-proposta-msg');m.className='form-msg err';m.textContent='Nome do cliente obrigatório.';return;}
   const d={
     cliente,emp:document.getElementById('pp-emp').value.trim(),
+    local:document.getElementById('pp-local').value.trim(),
     tel:document.getElementById('pp-tel').value.trim(),email:document.getElementById('pp-email').value.trim(),
     produto:document.getElementById('pp-produto').value.trim(),valor:parseFloat(document.getElementById('pp-valor').value)||0,desconto:parseFloat(document.getElementById('pp-desconto').value)||0,
     resp:document.getElementById('pp-resp').value,origem:document.getElementById('pp-origem').value,
@@ -1708,6 +1725,7 @@ function duplicarProposta(id){
   setTimeout(()=>{
     document.getElementById('pp-cliente').value=p.cliente||'';
     document.getElementById('pp-emp').value=p.emp||'';
+    document.getElementById('pp-local').value=p.local||'';
     document.getElementById('pp-tel').value=p.tel||'';
     document.getElementById('pp-email').value=p.email||'';
     document.getElementById('pp-resp').value=p.resp||'';
@@ -1911,7 +1929,7 @@ function openForm(type){
     pedidoItens=[];
     document.getElementById('form-pedido-title').textContent='Novo Pedido';
     const today=new Date().toISOString().split('T')[0];
-    ['f-cliente','f-evento','f-montagem','f-prazo','f-datapgto','f-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    ['f-cliente','f-evento','f-local','f-montagem','f-prazo','f-datapgto','f-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     document.getElementById('f-tipo').value='Locação';
     document.getElementById('f-data').value=today;
     document.getElementById('f-uf').value='SP';
@@ -1951,7 +1969,7 @@ function openForm(type){
   } else if(type==='proposta'){
     editPropostaId=null;
     propostaItens=[];
-    ['pp-cliente','pp-emp','pp-tel','pp-email','pp-dataenvio','pp-dataevento','pp-acao','pp-dataacao','pp-obs','pp-perda'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    ['pp-cliente','pp-emp','pp-local','pp-tel','pp-email','pp-dataenvio','pp-dataevento','pp-acao','pp-dataacao','pp-obs','pp-perda'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     document.getElementById('pp-resp').value='';
     document.getElementById('pp-origem').value='';
     document.getElementById('pp-status').value='Em elaboração';
@@ -1974,7 +1992,7 @@ async function submitPedido(){
   const das=parseFloat(document.getElementById('f-das').value)||4;
   const icms=parseFloat(document.getElementById('f-icms').value)||0;
   const iss=parseFloat(document.getElementById('f-iss').value)||0;
-  const base={tipo:document.getElementById('f-tipo').value,tri:getTri(dataPedido),cliente,evento:document.getElementById('f-evento').value.trim(),uf:document.getElementById('f-uf').value,data_pedido:dataPedido,montagem:document.getElementById('f-montagem').value||null,prazo_pgto:document.getElementById('f-prazo').value||'',data_pgto:document.getElementById('f-datapgto').value||null,status_pgto:'PENDENTE',obs:document.getElementById('f-obs').value.trim(),resp:document.getElementById('f-resp').value,das,icms,iss};
+  const base={tipo:document.getElementById('f-tipo').value,tri:getTri(dataPedido),cliente,evento:document.getElementById('f-evento').value.trim(),local:document.getElementById('f-local').value.trim(),uf:document.getElementById('f-uf').value,data_pedido:dataPedido,montagem:document.getElementById('f-montagem').value||null,prazo_pgto:document.getElementById('f-prazo').value||'',data_pgto:document.getElementById('f-datapgto').value||null,status_pgto:'PENDENTE',obs:document.getElementById('f-obs').value.trim(),resp:document.getElementById('f-resp').value,das,icms,iss};
   const btn=document.querySelector('#form-pedido .btn-green');btn.textContent='Salvando...';btn.disabled=true;
   try{
     if(editPedidoId!==null){
@@ -2011,6 +2029,7 @@ function openEditPedido(id){
   document.getElementById('f-data').value=d.dataPedido||'';
   document.getElementById('f-cliente').value=d.cliente||'';
   document.getElementById('f-evento').value=d.evento||'';
+  document.getElementById('f-local').value=d.local||'';
   document.getElementById('f-uf').value=d.uf||'SP';
   document.getElementById('f-montagem').value=d.montagem||'';
   document.getElementById('f-prazo').value=d.prazoPgto||'';
