@@ -766,8 +766,8 @@ async function loadData(){
 }
 
 // Mappers Supabase → objeto interno
-function mapPedido(r){return{id:r.id,tipo:r.tipo||'Locação',tri:r.tri||'',cliente:r.cliente||'',evento:r.evento||'',uf:r.uf||'',produto:r.produto||'',desc:r.descricao||r.desc||'',qtde:parseFloat(r.qtde)||0,unitario:parseFloat(r.unitario)||0,total:parseFloat(r.total)||0,dataPedido:r.data_pedido||'',montagem:r.montagem||'',prazoPgto:r.prazo_pgto||'',dataPgto:r.data_pgto||'',statusPgto:(r.status_pgto||'PENDENTE').toUpperCase(),obs:r.obs||'',resp:r.resp||'',das:parseFloat(r.das)||4,icms:parseFloat(r.icms)||0,iss:parseFloat(r.iss)||0};}
-function mapProposta(r){let itens=[];try{if(r.itens)itens=typeof r.itens==='string'?JSON.parse(r.itens):r.itens;}catch(e){}return{id:r.id,cliente:r.cliente||'',emp:r.emp||'',tel:r.tel||'',email:r.email||'',produto:r.produto||'',valor:parseFloat(r.valor)||0,resp:r.resp||'',origem:r.origem||'',status:r.status||'Em elaboração',prob:parseFloat(r.prob)||0,dataEnvio:r.data_envio||'',dataEvento:r.data_evento||'',dataLimite:r.data_limite||'',dataFech:r.data_fech||'',acao:r.acao||'',dataAcao:r.data_acao||'',obs:r.obs||'',perda:r.perda||'',itens:itens,desconto:parseFloat(r.desconto)||0};}
+function mapPedido(r){return{id:r.id,tipo:r.tipo||'Locação',tri:r.tri||'',cliente:r.cliente||'',evento:r.evento||'',local:r.local||'',uf:r.uf||'',produto:r.produto||'',desc:r.descricao||r.desc||'',qtde:parseFloat(r.qtde)||0,unitario:parseFloat(r.unitario)||0,total:parseFloat(r.total)||0,dataPedido:r.data_pedido||'',montagem:r.montagem||'',prazoPgto:r.prazo_pgto||'',dataPgto:r.data_pgto||'',statusPgto:(r.status_pgto||'PENDENTE').toUpperCase(),obs:r.obs||'',resp:r.resp||'',das:parseFloat(r.das)||4,icms:parseFloat(r.icms)||0,iss:parseFloat(r.iss)||0};}
+function mapProposta(r){let itens=[];try{if(r.itens)itens=typeof r.itens==='string'?JSON.parse(r.itens):r.itens;}catch(e){}return{id:r.id,cliente:r.cliente||'',emp:r.emp||'',local:r.local||'',tel:r.tel||'',email:r.email||'',produto:r.produto||'',valor:parseFloat(r.valor)||0,resp:r.resp||'',origem:r.origem||'',status:r.status||'Em elaboração',prob:parseFloat(r.prob)||0,dataEnvio:r.data_envio||'',dataEvento:r.data_evento||'',dataLimite:r.data_limite||'',dataFech:r.data_fech||'',acao:r.acao||'',dataAcao:r.data_acao||'',obs:r.obs||'',perda:r.perda||'',itens:itens,desconto:parseFloat(r.desconto)||0};}
 // Mantém funções legadas para compatibilidade interna
 function parsePedidos(rows){return[];}
 function parseClientes(rows){return[];}
@@ -923,7 +923,7 @@ function renderTable(){
   rows.forEach(d=>{
     const chave=`${d.cliente}||${d.evento}||${d.dataPedido}||${d.tipo}||${d.resp}||${d.statusPgto}`;
     if(!mapa[chave]){
-      const g={chave,ids:[],tipo:d.tipo,cliente:d.cliente,evento:d.evento,uf:d.uf,dataPedido:d.dataPedido,montagem:d.montagem,dataPgto:d.dataPgto,statusPgto:d.statusPgto,resp:d.resp,das:d.das,icms:d.icms,iss:d.iss,itens:[],totalBruto:0};
+      const g={chave,ids:[],tipo:d.tipo,cliente:d.cliente,evento:d.evento,local:d.local||'',uf:d.uf,dataPedido:d.dataPedido,montagem:d.montagem,dataPgto:d.dataPgto,statusPgto:d.statusPgto,resp:d.resp,das:d.das,icms:d.icms,iss:d.iss,itens:[],totalBruto:0};
       mapa[chave]=g;grupos.push(g);
     }
     const g=mapa[chave];
@@ -957,7 +957,7 @@ function renderTable(){
       <td style="color:var(--text3);font-size:11px">${g.idPrincipal}</td>
       <td><span class="tag ${g.tipo==='Locação'?'tag-loc':'tag-vnd'}">${g.tipo}</span></td>
       <td style="font-weight:500">${g.cliente}</td>
-      <td>${g.evento||'—'}</td>
+      <td>${g.evento||'—'}${g.local?`<br><span style="font-size:10px;color:var(--text3)">📍 ${g.local}</span>`:''}</td>
       <td style="font-size:11px">${g.uf}</td>
       <td style="font-size:12px;color:var(--text2)">${resumoItens}</td>
       <td class="val-cell" style="text-align:right;font-weight:600">${fmt(g.totalBruto)}</td>
@@ -1593,6 +1593,7 @@ function renderPipeline(){
       <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text2);padding:8px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:8px">
         ${p.dataEnvio?`<span>📤 Envio: ${fmtD(p.dataEnvio)}</span>`:''}
         ${p.dataEvento?`<span>🎪 Evento: ${fmtD(p.dataEvento)}</span>`:''}
+        ${p.local?`<span>📍 ${p.local}</span>`:''}
         ${p.dataLimite?`<span>⏰ Limite: ${fmtD(p.dataLimite)}</span>`:''}
         ${p.dataFech?`<span>🎯 Fech. est.: ${fmtD(p.dataFech)}</span>`:''}
       </div>
