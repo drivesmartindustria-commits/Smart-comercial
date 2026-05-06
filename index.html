@@ -747,7 +747,8 @@ async function loadData(){
     ]);
     DATA=rPed.map(mapPedido);
     CLIENTES=rCli.map(r=>({id:r.id,nome:r.nome||'',cnpj:r.cnpj||'',tel:r.tel||'',email:r.email||'',end:r.end||r['end']||'',cidade:r.cidade||'',uf:r.uf||'',obs:r.obs||''})).filter(d=>d.id);
-    PRODUTOS=rProd.map(r=>({id:r.id,cod:r.cod||'',tipo:r.tipo||'',desc:r.descricao||r.desc||'',preco:parseFloat(r.preco)||0,unid:r.unid||'',obs:r.obs||''})).filter(d=>d.id);
+    PRODUTOS=rProd.map(r=>({id:r.id,cod:r.cod||r.codigo||'',tipo:r.tipo||'',desc:r.descricao||r.desc||r.nome||r.name||'',preco:parseFloat(r.preco)||0,unid:r.unid||'',obs:r.obs||''})).filter(d=>d.id);
+    console.log('PRODUTOS carregados:', PRODUTOS.length, PRODUTOS[0]);
     AGENDA=rAg.map(r=>({id:r.id,titulo:r.titulo||'',data:r.data||'',hora:r.hora||'',desc:r.descricao||r.desc||'',tipo:r.tipo||'Outro',resp:r.resp||''})).filter(a=>a.titulo);
     NOTAS=rNot.map(r=>({id:r.id,texto:r.texto||'',resp:r.resp||'',data:r.data||''})).filter(n=>n.texto);
     PROPOSTAS=rProp.map(mapProposta).filter(p=>p.cliente);
