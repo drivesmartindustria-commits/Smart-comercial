@@ -434,8 +434,7 @@ tbody tr:hover td{background:var(--surface2)}
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Local</label><input class="form-input" id="f-local" type="text" placeholder="Ex: Espaço Giardini, Anhembi..."/></div>
-    </div>
-      <div class="form-group"><label class="form-label">UF</label><select class="form-select" id="f-uf" style="max-width:120px"><option>SP</option><option>RJ</option><option>MG</option><option>RS</option><option>PR</option><option>SC</option><option>BA</option><option>GO</option><option>DF</option><option>Outro</option></select></div>
+      <div class="form-group"><label class="form-label">UF</label><select class="form-select" id="f-uf"><option>SP</option><option>RJ</option><option>MG</option><option>RS</option><option>PR</option><option>SC</option><option>BA</option><option>GO</option><option>DF</option><option>Outro</option></select></div>
     </div>
     <!-- ITENS DO PEDIDO -->
     <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">📦 Itens do Pedido *</div>
@@ -1210,35 +1209,46 @@ async function deleteNota(id){
 // ── ITENS DO PEDIDO ──────────────────────────────────────────────────────────
 let pedidoItens=[];
 
-function filtrarProduto(itemId, tipo, query){
-  const drop=document.getElementById('drop-'+itemId);
-  if(!drop)return;
-  const q=(query||'').toLowerCase().trim();
-  const lista=q===''
-    ? PRODUTOS.slice(0,20)
-    : PRODUTOS.filter(p=>(p.cod||'').toLowerCase().includes(q)||(p.desc||'').toLowerCase().includes(q)).slice(0,20);
-  drop.style.display='block';
-  drop.innerHTML='';
-  if(lista.length===0){
-    drop.innerHTML='<div style="padding:10px 12px;font-size:12px;color:var(--text3)">Nenhum produto encontrado</div>';
+function buscarProduto(itemId, tipo, query){
+  const drop = document.getElementById('drop-'+itemId);
+  if(!drop) return;
+  const q = (query||'').toLowerCase().trim();
+  const lista = q === ''
+    ? PRODUTOS.slice(0, 20)
+    : PRODUTOS.filter(p =>
+        (p.cod||'').toLowerCase().includes(q) ||
+        (p.desc||'').toLowerCase().includes(q)
+      ).slice(0, 20);
+  drop.innerHTML = '';
+  if(lista.length === 0){
+    const msg = document.createElement('div');
+    msg.style.cssText = 'padding:10px 12px;font-size:12px;color:#94a3b8';
+    msg.textContent = PRODUTOS.length === 0 ? 'Carregando produtos...' : 'Nenhum produto encontrado';
+    drop.appendChild(msg);
+    drop.style.display = 'block';
     return;
   }
-  lista.forEach(p=>{
-    const btn=document.createElement('div');
-    btn.style.cssText='padding:9px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;gap:8px';
-    const label=document.createElement('span');
-    label.textContent=(p.cod?p.cod+' · ':'')+p.desc;
-    const price=document.createElement('span');
-    price.style.cssText='font-size:11px;color:#16a34a;white-space:nowrap;font-weight:600';
-    price.textContent='R$ '+(p.preco||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
-    btn.appendChild(label);
-    btn.appendChild(price);
-    btn.addEventListener('mouseover',()=>btn.style.background='#f1f5f9');
-    btn.addEventListener('mouseout',()=>btn.style.background='');
-    btn.addEventListener('mousedown',()=>selecionarProduto(itemId,tipo,p.cod||'',p.desc||'',p.preco||0,p.unid||'un'));
-    drop.appendChild(btn);
+  lista.forEach(function(p){
+    const row = document.createElement('div');
+    row.style.cssText = 'padding:9px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;gap:8px';
+    const left = document.createElement('span');
+    left.textContent = (p.cod ? p.cod + ' · ' : '') + (p.desc || '—');
+    const right = document.createElement('span');
+    right.style.cssText = 'font-size:11px;color:#16a34a;white-space:nowrap;font-weight:600';
+    right.textContent = 'R$ ' + (p.preco||0).toLocaleString('pt-BR', {minimumFractionDigits:2});
+    row.appendChild(left);
+    row.appendChild(right);
+    row.addEventListener('mouseover', function(){ row.style.background='#f8fafc'; });
+    row.addEventListener('mouseout', function(){ row.style.background=''; });
+    row.addEventListener('mousedown', function(e){
+      e.preventDefault();
+      selecionarProduto(itemId, tipo, p.cod||'', p.desc||'', p.preco||0, p.unid||'un');
+    });
+    drop.appendChild(row);
   });
+  drop.style.display = 'block';
 }
+function filtrarProduto(itemId, tipo, query){ buscarProduto(itemId, tipo, query); }
 
 function fecharDropdown(itemId){
   const drop=document.getElementById('drop-'+itemId);
@@ -1305,8 +1315,8 @@ function renderItensPedido(){
   tbody.innerHTML=pedidoItens.map(item=>`
     <tr style="border-top:1px solid var(--border)">
       <td style="padding:6px 8px;position:relative">
-        <input value="${item.produto}" oninput="filtrarProduto('${item.id}','pedido',this.value)" onfocus="filtrarProduto('${item.id}','pedido',this.value)" onblur="setTimeout(()=>fecharDropdown('${item.id}'),150)" id="f-item-prod-${item.id}" placeholder="Produto..." style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text)"/>
-        <div id="drop-${item.id}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:500;max-height:180px;overflow-y:auto"></div>
+        <input value="${item.produto}" oninput="buscarProduto('${item.id}','pedido',this.value)" onfocus="buscarProduto('${item.id}','pedido',this.value)" onblur="setTimeout(()=>fecharDropdown('${item.id}'),200)" id="f-item-prod-${item.id}" placeholder="Código ou descrição..." autocomplete="off" style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text)"/>
+        <div id="drop-${item.id}" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:9999;max-height:200px;overflow-y:auto"></div>
       </td>
       <td style="padding:6px 8px">
         <input value="${item.desc}" id="f-item-desc-${item.id}" oninput="updateItemPedido('${item.id}','desc',this.value)" placeholder="Descrição..." style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text)"/>
@@ -1446,8 +1456,8 @@ function renderItensTable(){
   tbody.innerHTML=propostaItens.map(item=>`
     <tr style="border-top:1px solid var(--border)">
       <td style="padding:6px 8px;position:relative">
-        <input value="${item.produto}" oninput="filtrarProduto(${item.id},'proposta',this.value)" onfocus="filtrarProduto(${item.id},'proposta',this.value)" onblur="setTimeout(()=>fecharDropdown(${item.id}),150)" id="pp-item-prod-${item.id}" placeholder="Produto..." style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text)"/>
-        <div id="drop-${item.id}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:500;max-height:180px;overflow-y:auto"></div>
+        <input value="${item.produto}" oninput="buscarProduto(${item.id},'proposta',this.value)" onfocus="buscarProduto(${item.id},'proposta',this.value)" onblur="setTimeout(()=>fecharDropdown(${item.id}),200)" id="pp-item-prod-${item.id}" placeholder="Código ou descrição..." autocomplete="off" style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text)"/>
+        <div id="drop-${item.id}" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:9999;max-height:200px;overflow-y:auto"></div>
       </td>
       <td style="padding:6px 8px">
         <input value="${item.unid}" oninput="updateItem(${item.id},'unid',this.value)" placeholder="un" style="width:100%;background:transparent;border:none;outline:none;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);text-align:center"/>
