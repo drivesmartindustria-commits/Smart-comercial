@@ -846,10 +846,10 @@ function buildDashboard(){
   if(chartPgto)chartPgto.destroy();
   chartPgto=new Chart(document.getElementById('chartPgto'),{type:'doughnut',data:{labels:['Pago','Pendente','Não Pago'],datasets:[{data:[pg,pe,np],backgroundColor:['#15803D','#B45309','#B91C1C'],borderWidth:3,borderColor:'#FDFCFA'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false}}}});
 
-  const prods={};DATA.forEach(d=>{prods[d.produto]=(prods[d.produto]||0)+d.total;});
+  const prods={};const prodsQtd={};DATA.forEach(d=>{prods[d.produto]=(prods[d.produto]||0)+d.total;prodsQtd[d.produto]=(prodsQtd[d.produto]||0)+(d.qtde||1);});
   const srtP=Object.entries(prods).sort((a,b)=>b[1]-a[1]).slice(0,5);const mxP=srtP[0]?srtP[0][1]:1;
   const colors=['#2563EB','#0D9488','#EA580C','#9333EA','#DB2777'];
-  document.getElementById('top-produtos').innerHTML=srtP.map(([p,v],i)=>`<div class="prog-item"><div class="prog-row"><span style="font-weight:500">${p}</span><span style="font-family:'DM Mono',monospace;font-size:11px">${fmt(v)}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${(v/mxP*100).toFixed(1)}%;background:${colors[i%colors.length]}"></div></div></div>`).join('');
+  document.getElementById('top-produtos').innerHTML=srtP.map(([p,v],i)=>`<div class="prog-item"><div class="prog-row"><span style="font-weight:500">${p}</span><div style="display:flex;gap:12px;align-items:center"><span style="font-size:11px;color:var(--text3)">🔢 ${prodsQtd[p]||0} un</span><span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600">${fmt(v)}</span></div></div><div class="prog-bar"><div class="prog-fill" style="width:${(v/mxP*100).toFixed(1)}%;background:${colors[i%colors.length]}"></div></div></div>`).join('');
 
   const totImp=DATA.reduce((s,d)=>{const pct=(d.das||4)+(d.icms||0)+(d.iss||0);return s+(d.total*(pct/100));},0);
   const totLiq=totFat-totImp;
