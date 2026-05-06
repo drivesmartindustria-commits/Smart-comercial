@@ -1708,32 +1708,31 @@ async function fecharNegocio(id){
   if(idx!==-1){PROPOSTAS[idx].status='Fechada';PROPOSTAS[idx].prob=100;}
   await sbUpdate('propostas',id,{status:'Fechada',prob:100});
 
-  // 2. Cria pedido automaticamente
+  // 2. Cria pedido automaticamente — um registro por item da proposta
   const hoje=new Date().toISOString().split('T')[0];
-  const novoPedido={
-    id:DATA.length+1,
-    tipo:'Locação',
-    tri:getTri(hoje),
-    cliente:p.cliente,
-    evento:p.emp||'',
-    uf:'SP',
-    produto:p.produto||'',
-    desc:'Proposta convertida — '+p.obs,
-    qtde:1,
-    unitario:p.valor,
-    total:p.valor,
-    dataPedido:hoje,
-    montagem:p.dataEvento||null,
-    prazoPgto:'',
-    dataPgto:p.dataFech||null,
-    statusPgto:'PENDENTE',
-    obs:'Originado da proposta #'+id+(p.origem?' · Origem: '+p.origem:''),
-    resp:p.resp||'',
-    das:4,icms:0,iss:0
-  };
-  const sbPedido={tipo:novoPedido.tipo,tri:novoPedido.tri,cliente:novoPedido.cliente,evento:novoPedido.evento,local:p.local||'',uf:novoPedido.uf,produto:novoPedido.produto,descricao:novoPedido.desc||'',qtde:novoPedido.qtde,unitario:novoPedido.unitario,total:novoPedido.total,data_pedido:novoPedido.dataPedido,montagem:novoPedido.montagem||null,prazo_pgto:'',data_pgto:novoPedido.dataPgto||null,status_pgto:novoPedido.statusPgto,obs:novoPedido.obs,resp:novoPedido.resp||'',das:4,icms:0,iss:0};
-  const novoDB=await sbInsert('pedidos',sbPedido);
-  DATA.push(mapPedido(novoDB[0]));
+  const itensProposta=p.itens&&p.itens.length>0
+    ? p.itens
+    : [{produto:p.produto||'',desc:'',qtde:1,unit:p.valor,total:p.valor,unid:'un'}];
+
+  for(const it of itensProposta){
+    const sbPedido={
+      tipo:'Locação',tri:getTri(hoje),cliente:p.cliente,
+      evento:p.emp||'',local:p.local||'',uf:'SP',
+      produto:it.produto||'',
+      descricao:it.desc||it.produto||'',
+      qtde:it.qtde||1,
+      unitario:it.unit||it.unitario||0,
+      total:it.total||0,
+      data_pedido:hoje,
+      montagem:p.dataEvento||null,
+      prazo_pgto:'',data_pgto:null,
+      status_pgto:'PENDENTE',
+      obs:'Originado da proposta #'+id+(p.origem?' · Origem: '+p.origem:''),
+      resp:p.resp||'',das:4,icms:0,iss:0
+    };
+    const novoDB=await sbInsert('pedidos',sbPedido);
+    DATA.push(mapPedido(novoDB[0]));
+  }
 
   // 3. Atualiza tela — vai para aba Fechadas
   activePipeFilter='Fechada';
