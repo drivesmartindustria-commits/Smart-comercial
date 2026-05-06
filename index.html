@@ -273,6 +273,13 @@ tbody tr:hover td{background:var(--surface2)}
   <!-- FORECAST BAR -->
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px" id="pipe-kpis"></div>
 
+  <!-- VISÃO TOGGLE -->
+  <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+    <button id="btn-visao-ativa" onclick="setPipeVisao('ativa')" class="btn" style="font-size:12px;padding:6px 16px">📋 Ativas</button>
+    <button id="btn-visao-arquivo" onclick="setPipeVisao('arquivo')" class="btn-outline" style="font-size:12px;padding:6px 16px">🗄️ Arquivo</button>
+    <span id="pipe-visao-label" style="font-size:11px;color:var(--text3);margin-left:4px">Em elaboração, negociação e pendentes</span>
+  </div>
+
   <!-- STATUS FILTER -->
   <div class="filter-row" id="pipe-filter" style="margin-bottom:14px"></div>
 
@@ -673,7 +680,11 @@ tbody tr:hover td{background:var(--surface2)}
     <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 10px">📅 Datas</div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Data Envio Proposta</label><input class="form-input" id="pp-dataenvio" type="date"/></div>
-      <div class="form-group"><label class="form-label">Data do Evento</label><input class="form-input" id="pp-dataevento" type="date"/></div>
+      <div class="form-group"><label class="form-label">Data do Evento</label><input class="form-input" id="pp-dataevento" type="date" oninput="calcDataPgtoProposta()"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Prazo Pgto (dias)</label><input class="form-input" id="pp-prazo" type="text" inputmode="numeric" placeholder="Ex: 30" oninput="calcDataPgtoProposta()"/></div>
+      <div class="form-group"><label class="form-label">Data Pagamento <span style="font-size:10px;color:var(--text3);font-weight:400">(calculada)</span></label><input class="form-input" id="pp-datapgto" type="date" readonly style="background:var(--surface2);color:var(--text2);cursor:default"/></div>
     </div>
     <!-- Ações -->
     <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 10px">⚡ Próxima Ação</div>
@@ -780,7 +791,7 @@ async function loadData(){
 
 // Mappers Supabase → objeto interno
 function mapPedido(r){return{id:r.id,tipo:r.tipo||'Locação',tri:r.tri||'',cliente:r.cliente||'',evento:r.evento||'',local:r.local||'',uf:r.uf||'',produto:r.produto||'',desc:r.descricao||r.desc||'',qtde:parseFloat(r.qtde)||0,unitario:parseFloat(r.unitario)||0,total:parseFloat(r.total)||0,dataPedido:r.data_pedido||'',montagem:r.montagem||'',prazoPgto:r.prazo_pgto||'',dataPgto:r.data_pgto||'',statusPgto:(r.status_pgto||'PENDENTE').toUpperCase(),obs:r.obs||'',resp:r.resp||'',das:parseFloat(r.das)||4,icms:parseFloat(r.icms)||0,iss:parseFloat(r.iss)||0};}
-function mapProposta(r){let itens=[];try{if(r.itens)itens=typeof r.itens==='string'?JSON.parse(r.itens):r.itens;}catch(e){}return{id:r.id,cliente:r.cliente||'',emp:r.emp||'',local:r.local||'',tel:r.tel||'',email:r.email||'',produto:r.produto||'',valor:parseFloat(r.valor)||0,resp:r.resp||'',origem:r.origem||'',status:r.status||'Em elaboração',prob:parseFloat(r.prob)||0,dataEnvio:r.data_envio||'',dataEvento:r.data_evento||'',dataLimite:r.data_limite||'',dataFech:r.data_fech||'',acao:r.acao||'',dataAcao:r.data_acao||'',obs:r.obs||'',perda:r.perda||'',itens:itens,desconto:parseFloat(r.desconto)||0};}
+function mapProposta(r){let itens=[];try{if(r.itens)itens=typeof r.itens==='string'?JSON.parse(r.itens):r.itens;}catch(e){}return{id:r.id,cliente:r.cliente||'',emp:r.emp||'',local:r.local||'',tel:r.tel||'',email:r.email||'',produto:r.produto||'',valor:parseFloat(r.valor)||0,resp:r.resp||'',origem:r.origem||'',status:r.status||'Em elaboração',prob:parseFloat(r.prob)||0,dataEnvio:r.data_envio||'',dataEvento:r.data_evento||'',dataLimite:r.data_limite||'',dataFech:r.data_fech||'',prazoPgto:r.prazo_pgto||'',dataPgto:r.data_pgto||'',acao:r.acao||'',dataAcao:r.data_acao||'',obs:r.obs||'',perda:r.perda||'',itens:itens,desconto:parseFloat(r.desconto)||0};}
 // Mantém funções legadas para compatibilidade interna
 function parsePedidos(rows){return[];}
 function parseClientes(rows){return[];}
@@ -1254,6 +1265,18 @@ function qtdChange(itemId, tipo, sel){
     else updateItem(itemId,'qtde',sel.value);
   }
 }
+function calcDataPgtoProposta(){
+  const prazo=parseInt(document.getElementById('pp-prazo').value)||0;
+  const dataEvento=document.getElementById('pp-dataevento').value;
+  const el=document.getElementById('pp-datapgto');
+  if(prazo>0&&dataEvento){
+    const dt=new Date(dataEvento+'T00:00:00');
+    dt.setDate(dt.getDate()+prazo);
+    el.value=dt.toISOString().split('T')[0];
+  } else {
+    el.value='';
+  }
+}
 function parseBR(v){return parseFloat((v||'0').replace(/\./g,'').replace(',','.'))||0;}
 function updateItemPedidoVal(itemId,val){updateItemPedido(itemId,'unit',parseBR(val));}
 function updateItemPropostaVal(itemId,val){updateItem(itemId,'unit',parseBR(val));}
@@ -1419,6 +1442,24 @@ function closeAllForms(){['form-pedido','form-cliente','form-produto','form-agen
 let PROPOSTAS=[];
 let editPropostaId=null;
 let activePipeFilter='Todas';
+let pipeVisao='ativa'; // 'ativa' ou 'arquivo'
+
+const STATUS_ATIVOS=['Em elaboração','Proposta enviada','Em negociação','Aguardando retorno','Alta chance'];
+const STATUS_ARQUIVO=['Fechada','Perdida'];
+
+function setPipeVisao(v){
+  pipeVisao=v;
+  activePipeFilter='Todas';
+  // Update buttons
+  document.getElementById('btn-visao-ativa').className=v==='ativa'?'btn':'btn-outline';
+  document.getElementById('btn-visao-ativa').style.cssText='font-size:12px;padding:6px 16px';
+  document.getElementById('btn-visao-arquivo').className=v==='arquivo'?'btn':'btn-outline';
+  document.getElementById('btn-visao-arquivo').style.cssText='font-size:12px;padding:6px 16px';
+  document.getElementById('pipe-visao-label').textContent=v==='ativa'
+    ?'Em elaboração, negociação e pendentes'
+    :'Propostas fechadas e perdidas';
+  renderPipeline();
+}
 
 const STATUS_COLORS={
   'Em elaboração':   {bg:'#F1F5F9',text:'#475569',border:'#CBD5E1'},
@@ -1555,7 +1596,9 @@ async function loadPropostas(){
 }
 
 function renderPipeline(){
-  const allStatus=['Todas','Em elaboração','Proposta enviada','Em negociação','Aguardando retorno','Alta chance','Fechada','Perdida'];
+  const statusDoGrupo=pipeVisao==='ativa'?STATUS_ATIVOS:STATUS_ARQUIVO;
+  const propostasVisao=PROPOSTAS.filter(p=>statusDoGrupo.includes(p.status));
+  const allStatus=['Todas',...new Set(propostasVisao.map(p=>p.status))];
   const filt=document.getElementById('pipe-filter');
   if(filt)filt.innerHTML=allStatus.map(s=>{
     const c=STATUS_COLORS[s];
@@ -1563,7 +1606,7 @@ function renderPipeline(){
     return `<button class="flt${isOn?' on':''}" onclick="setPipeFilter('${s}')" style="${isOn?'':c?`background:${c.bg};color:${c.text};border-color:${c.border}`:''}}">${s}</button>`;
   }).join('');
 
-  const filtered=activePipeFilter==='Todas'?PROPOSTAS:PROPOSTAS.filter(p=>p.status===activePipeFilter);
+  const filtered=activePipeFilter==='Todas'?propostasVisao:propostasVisao.filter(p=>p.status===activePipeFilter);
 
   // KPIs forecast
   const totValor=filtered.reduce((s,p)=>s+p.valor,0);
@@ -1667,6 +1710,8 @@ function openEditProposta(id){
   document.getElementById('pp-prob').value=p.prob||0;
   document.getElementById('pp-dataenvio').value=p.dataEnvio||'';
   document.getElementById('pp-dataevento').value=p.dataEvento||'';
+  document.getElementById('pp-prazo').value=p.prazoPgto||'';
+  document.getElementById('pp-datapgto').value=p.dataPgto||'';
   document.getElementById('pp-acao').value=p.acao||'';
   document.getElementById('pp-dataacao').value=p.dataAcao||'';
   document.getElementById('pp-obs').value=p.obs||'';
@@ -1697,6 +1742,8 @@ async function submitProposta(){
     status:document.getElementById('pp-status').value,prob:parseFloat(document.getElementById('pp-prob').value)||0,
     dataEnvio:document.getElementById('pp-dataenvio').value||null,
     dataEvento:document.getElementById('pp-dataevento').value||null,
+    prazoPgto:document.getElementById('pp-prazo').value||'',
+    dataPgto:document.getElementById('pp-datapgto').value||null,
     acao:document.getElementById('pp-acao').value.trim(),
     dataAcao:document.getElementById('pp-dataacao').value||null,
     obs:document.getElementById('pp-obs').value.trim(),
@@ -1707,10 +1754,10 @@ async function submitProposta(){
   try{
     if(editPropostaId!==null){
       const idx=PROPOSTAS.findIndex(x=>x.id===editPropostaId);
-      const sbObj2={cliente:d.cliente,emp:d.emp,local:d.local||'',tel:d.tel,email:d.email,produto:d.produto,valor:d.valor,resp:d.resp,origem:d.origem,status:d.status,prob:d.prob,data_envio:d.dataEnvio||null,data_evento:d.dataEvento||null,acao:d.acao,data_acao:d.dataAcao||null,obs:d.obs,perda:d.perda,itens:d.itens||[],desconto:d.desconto||0};
+      const sbObj2={cliente:d.cliente,emp:d.emp,local:d.local||'',tel:d.tel,email:d.email,produto:d.produto,valor:d.valor,resp:d.resp,origem:d.origem,status:d.status,prob:d.prob,data_envio:d.dataEnvio||null,data_evento:d.dataEvento||null,prazo_pgto:d.prazoPgto||'',data_pgto:d.dataPgto||null,acao:d.acao,data_acao:d.dataAcao||null,obs:d.obs,perda:d.perda,itens:d.itens||[],desconto:d.desconto||0};
       if(idx!==-1){const upd=await sbUpdate('propostas',editPropostaId,sbObj2);PROPOSTAS[idx]=mapProposta(upd[0]);}
     } else {
-      const sbObj={cliente:d.cliente,emp:d.emp,local:d.local||'',tel:d.tel,email:d.email,produto:d.produto,valor:d.valor,resp:d.resp,origem:d.origem,status:d.status,prob:d.prob,data_envio:d.dataEnvio||null,data_evento:d.dataEvento||null,acao:d.acao,data_acao:d.dataAcao||null,obs:d.obs,perda:d.perda,itens:d.itens||[],desconto:d.desconto||0};
+      const sbObj={cliente:d.cliente,emp:d.emp,local:d.local||'',tel:d.tel,email:d.email,produto:d.produto,valor:d.valor,resp:d.resp,origem:d.origem,status:d.status,prob:d.prob,data_envio:d.dataEnvio||null,data_evento:d.dataEvento||null,prazo_pgto:d.prazoPgto||'',data_pgto:d.dataPgto||null,acao:d.acao,data_acao:d.dataAcao||null,obs:d.obs,perda:d.perda,itens:d.itens||[],desconto:d.desconto||0};
       const novo=await sbInsert('propostas',sbObj);PROPOSTAS.push({...mapProposta(novo[0])});
     }
     renderPipeline();
@@ -1753,7 +1800,7 @@ async function fecharNegocio(id){
       total:it.total||0,
       data_pedido:hoje,
       montagem:p.dataEvento||null,
-      prazo_pgto:'',data_pgto:null,
+      prazo_pgto:p.prazoPgto||'',data_pgto:p.dataPgto||null,
       status_pgto:'PENDENTE',
       obs:'Originado da proposta #'+id+(p.origem?' · Origem: '+p.origem:''),
       resp:p.resp||'',das:4,icms:0,iss:0
@@ -1762,11 +1809,12 @@ async function fecharNegocio(id){
     DATA.push(mapPedido(novoDB[0]));
   }
 
-  // 3. Atualiza tela — vai para aba Fechadas
+  // 3. Atualiza tela — vai para aba Arquivo/Fechadas
+  pipeVisao='arquivo';
   activePipeFilter='Fechada';
   buildDashboard();
-  renderPipeline();
-  alert(`✅ Negócio fechado!\n\nPedido criado em Locações e Vendas.\nProposta movida para "Fechadas".`);
+  setPipeVisao('arquivo');
+  alert(`✅ Negócio fechado!\n\nPedido criado em Locações e Vendas.\nProposta movida para "Arquivo".`);
 }
 
 // GERAR PDF
@@ -2021,7 +2069,7 @@ function openForm(type){
   } else if(type==='proposta'){
     editPropostaId=null;
     propostaItens=[];
-    ['pp-cliente','pp-emp','pp-local','pp-tel','pp-email','pp-dataenvio','pp-dataevento','pp-acao','pp-dataacao','pp-obs','pp-perda'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    ['pp-cliente','pp-emp','pp-local','pp-tel','pp-email','pp-dataenvio','pp-dataevento','pp-prazo','pp-datapgto','pp-acao','pp-dataacao','pp-obs','pp-perda'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     document.getElementById('pp-resp').value='';
     document.getElementById('pp-origem').value='';
     document.getElementById('pp-status').value='Em elaboração';
