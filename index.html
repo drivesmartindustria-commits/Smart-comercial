@@ -2098,8 +2098,13 @@ async function submitProduto(){
   const d={cod,tipo:document.getElementById('fp-tipo').value,descricao:desc,preco:parseFloat(document.getElementById('fp-preco').value)||0,unid:document.getElementById('fp-unid').value.trim(),obs:document.getElementById('fp-obs').value.trim()};
   const btn=document.querySelector('#form-produto .btn-green');btn.textContent='Salvando...';btn.disabled=true;
   try{
-    if(editProdutoId!==null){const idx=PRODUTOS.findIndex(x=>x.id===editProdutoId);if(idx!==-1){const upd=await sbUpdate('produtos',editProdutoId,d);PRODUTOS[idx]={...PRODUTOS[idx],...upd[0]};}}
-    else{const novo=await sbInsert('produtos',d);PRODUTOS.push({...novo[0],id:novo[0].id});}
+    if(editProdutoId!==null){
+      const idx=PRODUTOS.findIndex(x=>x.id===editProdutoId);
+      if(idx!==-1){const upd=await sbUpdate('produtos',editProdutoId,d);const r=upd[0];PRODUTOS[idx]={id:r.id,cod:r.cod||'',tipo:r.tipo||'',desc:r.descricao||r.desc||'',preco:parseFloat(r.preco)||0,unid:r.unid||'',obs:r.obs||''};}
+    } else {
+      const novo=await sbInsert('produtos',d);const r=novo[0];
+      PRODUTOS.push({id:r.id,cod:r.cod||'',tipo:r.tipo||'',desc:r.descricao||r.desc||'',preco:parseFloat(r.preco)||0,unid:r.unid||'',obs:r.obs||''});
+    }
     updateDataLists();buildProdutos();const m=document.getElementById('form-produto-msg');m.className='form-msg ok';m.textContent='✓ Salvo!';setTimeout(closeAllForms,1400);
   }catch(e){const m=document.getElementById('form-produto-msg');m.className='form-msg err';m.textContent='Erro: '+e.message;}
   btn.textContent='💾 Salvar';btn.disabled=false;
