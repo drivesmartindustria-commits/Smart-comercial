@@ -1776,30 +1776,34 @@ async function rewritePropostas(){/* não usado com Supabase */}
 
 async function fecharNegocio(id){
   const p=PROPOSTAS.find(x=>x.id===id);if(!p)return;
-  if(!confirm(`Fechar negócio com ${p.cliente} — R$ ${p.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}?\n\nIsso irá:\n✅ Marcar proposta como "Fechada"\n✅ Criar pedido em Locações e Vendas`))return;
+  if(!confirm('Fechar negócio com '+p.cliente+'?\n\n✅ Marcar proposta como Fechada\n✅ Criar pedido em Locações e Vendas'))return;
 
   // 1. Atualiza proposta para Fechada
-  const idx=PROPOSTAS.findIndex(x=>x.id===id);
-  if(idx!==-1){PROPOSTAS[idx].status='Fechada';PROPOSTAS[idx].prob=100;}
+  const idx2=PROPOSTAS.findIndex(x=>x.id===id);
+  if(idx2!==-1){PROPOSTAS[idx2].status='Fechada';PROPOSTAS[idx2].prob=100;}
   await sbUpdate('propostas',id,{status:'Fechada',prob:100});
 
-  // 2. Cria pedido automaticamente — um registro por item da proposta
-  const hoje=new Date().toISOString().split('T')[0];
-  const itensProposta=p.itens&&p.itens.length>0
-    ? p.itens
-    : [{produto:p.produto||'',desc:'',qtde:1,unit:p.valor,total:p.valor,unid:'un'}];
+  // 2. Busca itens frescos do banco
+  let itensParaUsar=[];
+  try{
+    const rows=await sbGet('propostas','select=*&id=eq.'+id);
+    if(rows&&rows[0]){const fresh=mapProposta(rows[0]);itensParaUsar=fresh.itens&&fresh.itens.length>0?fresh.itens:[];}
+  }catch(e){}
+  if(itensParaUsar.length===0){
+    itensParaUsar=p.itens&&p.itens.length>0
+      ?p.itens
+      :[{produto:p.produto||'Produto',desc:p.produto||'',qtde:1,unit:p.valor,total:p.valor,unid:'un'}];
+  }
 
-  for(const it of itensProposta){
+  // 3. Cria pedido — um registro por item
+  const hoje=new Date().toISOString().split('T')[0];
+  for(const it of itensParaUsar){
     const sbPedido={
       tipo:'Locação',tri:getTri(hoje),cliente:p.cliente,
       evento:p.emp||'',local:p.local||'',uf:'SP',
-      produto:it.produto||'',
-      descricao:it.desc||it.produto||'',
-      qtde:it.qtde||1,
-      unitario:it.unit||it.unitario||0,
-      total:it.total||0,
-      data_pedido:hoje,
-      montagem:p.dataEvento||null,
+      produto:it.produto||'',descricao:it.desc||it.produto||'',
+      qtde:it.qtde||1,unitario:it.unit||it.unitario||0,total:it.total||0,
+      data_pedido:hoje,montagem:p.dataEvento||null,
       prazo_pgto:p.prazoPgto||'',data_pgto:p.dataPgto||null,
       status_pgto:'PENDENTE',
       obs:'Originado da proposta #'+id+(p.origem?' · Origem: '+p.origem:''),
@@ -1809,12 +1813,10 @@ async function fecharNegocio(id){
     DATA.push(mapPedido(novoDB[0]));
   }
 
-  // 3. Atualiza tela — vai para aba Arquivo/Fechadas
-  pipeVisao='arquivo';
-  activePipeFilter='Fechada';
-  buildDashboard();
-  setPipeVisao('arquivo');
-  alert(`✅ Negócio fechado!\n\nPedido criado em Locações e Vendas.\nProposta movida para "Arquivo".`);
+  // 4. Atualiza tela
+  pipeVisao='arquivo';activePipeFilter='Fechada';
+  buildDashboard();setPipeVisao('arquivo');
+  alert('✅ Negócio fechado!\n\n'+itensParaUsar.length+' item(ns) criado(s) em Locações e Vendas.');
 }
 
 // GERAR PDF
